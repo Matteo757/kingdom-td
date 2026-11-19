@@ -21,3 +21,11 @@ add_test(NAME test_game COMMAND test_game)
 add_executable(test_enemies test_enemies.cpp)
 target_link_libraries(test_enemies PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_enemies COMMAND test_enemies)
+
+add_executable(test_build test_build.cpp)
+target_link_libraries(test_build PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_build COMMAND test_build)
+
+add_executable(test_spell test_spell.cpp)
+target_link_libraries(test_spell PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_spell COMMAND test_spell)

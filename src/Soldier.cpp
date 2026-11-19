@@ -59,6 +59,15 @@ void Soldier::release()
     m_target = nullptr;
 }
 
+void Soldier::upgrade()
+{
+    m_maxHealth *= 1.25;
+    m_damage *= 1.25;
+    if (alive()) {
+        m_health = m_maxHealth;
+    }
+}
+
 bool Soldier::alive() const
 {
     return m_health > 0.0;

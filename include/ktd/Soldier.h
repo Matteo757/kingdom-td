@@ -13,6 +13,7 @@ public:
     void takeDamage(double amount);
     void engage(Enemy* enemy);
     void release();
+    void upgrade();
 
     bool alive() const;
     double health() const;

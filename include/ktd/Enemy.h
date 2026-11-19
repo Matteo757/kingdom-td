@@ -20,7 +20,7 @@ public:
     virtual double speed() const = 0;
     virtual std::string name() const = 0;
     virtual int reward() const = 0;
-    virtual double attackPower() const { return 8.0; }
+    virtual double attackPower() const { return 5.0; }
     
     void update(double dt);
     void takeDamage(const Damage& damage);

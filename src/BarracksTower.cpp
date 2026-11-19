@@ -32,6 +32,18 @@ void BarracksTower::attack(Enemy& target)
     }
 }
 
+void BarracksTower::upgrade()
+{
+    const std::uint8_t before = level();
+    Tower::upgrade();
+    if (level() == before) {
+        return;
+    }
+    for (Soldier& soldier : m_soldiers) {
+        soldier.upgrade();
+    }
+}
+
 Enemy* BarracksTower::update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path&)
 {
     const auto present = [&](const Enemy* enemy) {

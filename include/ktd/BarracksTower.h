@@ -18,6 +18,7 @@ public:
     BarracksTower(const Vec2& position, const Path& path);
 
     void attack(Enemy& target) override;
+    void upgrade() override;
     Enemy* update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path) override;
     TowerType type() const override { return TowerType::Barracks; }
     std::vector<Vec2> unitPositions() const override;
