@@ -20,9 +20,12 @@ public:
     virtual double speed() const = 0;
     virtual std::string name() const = 0;
     virtual int reward() const = 0;
-
+    virtual double attackPower() const { return 8.0; }
+    
     void update(double dt);
     void takeDamage(const Damage& damage);
+    void setBlocked(bool blocked);
+    bool isBlocked() const;
 
     double health() const;
     double distance() const;
@@ -33,6 +36,7 @@ private:
     std::uint8_t m_armor;
     std::uint8_t m_magicResist;
     double m_distance = 0.0;
+    bool m_blocked = false;
 };
 
 }

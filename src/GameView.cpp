@@ -68,12 +68,40 @@ void GameView::drawPath()
 
 void GameView::drawTower(const Tower& tower)
 {
+    QColor color;
+    switch (tower.type()) {
+    case TowerType::Archer:    color = QColor(50, 100, 255); break;
+    case TowerType::Cannon:    color = QColor(60, 60, 60); break;
+    case TowerType::Mage:      color = QColor(150, 0, 200); break;
+    case TowerType::Barracks:  color = QColor(200, 120, 40); break;
+    case TowerType::Artillery: color = QColor(180, 40, 40); break;
+    }
     const Vec2& pos = tower.position();
     const double r = tower.range();
-    const QColor color = tower.damageType() == DamageType::Magic ? QColor(150, 0, 200) : QColor(Qt::blue);
     m_scene->addEllipse(pos.x - r, pos.y - r, 2 * r, 2 * r,
                         QPen(QColor(255, 255, 255, 90)), QBrush(QColor(255, 255, 255, 30)));
     m_scene->addRect(pos.x - 14, pos.y - 14, 28, 28, QPen(Qt::black), QBrush(color));
+}
+
+void GameView::updateUnits()
+{
+    std::vector<Vec2> positions;
+    for (const auto& tower : m_game.towers()) {
+        const std::vector<Vec2> units = tower->unitPositions();
+        positions.insert(positions.end(), units.begin(), units.end());
+    }
+    while (m_unitItems.size() > positions.size()) {
+        delete m_unitItems.back();
+        m_unitItems.pop_back();
+    }
+    while (m_unitItems.size() < positions.size()) {
+        QGraphicsEllipseItem* item = m_scene->addEllipse(-6, -6, 12, 12, QPen(Qt::black), QBrush(QColor(230, 170, 40)));
+        item->setZValue(5);
+        m_unitItems.push_back(item);
+    }
+    for (std::size_t i = 0; i < positions.size(); ++i) {
+        m_unitItems[i]->setPos(positions[i].x, positions[i].y);
+    }
 }
 
 void GameView::addEnemyItem(const SpawnEvent& event)
@@ -135,6 +163,7 @@ void GameView::tick()
         const Vec2 p = m_game.path().pointAt(enemy->distance());
         m_items.at(enemy.get())->setPos(p.x, p.y);
     }
+    updateUnits();
 
     if (m_game.isGameOver()) {
         m_timer.stop();

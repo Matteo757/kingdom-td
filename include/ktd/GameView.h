@@ -6,6 +6,7 @@
 #include <QGraphicsView>
 #include <QString>
 #include <QTimer>
+#include <vector>
 #include <unordered_map>
 #include "ktd/Game.h"
 
@@ -40,10 +41,12 @@ private:
     void showShot(const Shot& shot);
     void applyEvents(const FrameEvents& events);
     void showEndText(const QString& text);
+    void updateUnits();                                   // <-- nieuwe functie
 
     Game m_game;
     QGraphicsScene* m_scene;
     std::unordered_map<const Enemy*, QGraphicsEllipseItem*> m_items;
+    std::vector<QGraphicsEllipseItem*> m_unitItems;       // <-- nieuw lid
     QTimer m_timer;
     QElapsedTimer m_clock;
 };

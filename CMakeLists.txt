@@ -11,6 +11,8 @@ add_library(ktd_core STATIC
     src/Path.cpp
     src/Enemy.cpp
     src/Tower.cpp
+    src/Soldier.cpp
+    src/BarracksTower.cpp
     src/Player.cpp
     src/EnemyFactory.cpp
     src/WaveManager.cpp

@@ -15,6 +15,8 @@ public:
     {
         target.takeDamage({damage(), damageType()});
     }
+
+    TowerType type() const override { return TowerType::Mage; }
 };
 
 }

@@ -3,9 +3,29 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <limits>
 
 namespace ktd {
 
+    double Path::closestDistance(const Vec2& point) const
+{
+    double bestSquared = std::numeric_limits<double>::max();
+    double bestDistance = 0.0;
+    for (std::size_t i = 1; i < m_waypoints.size(); ++i) {
+        const Vec2 a = m_waypoints[i - 1];
+        const Vec2 ab = m_waypoints[i] - a;
+        const Vec2 ap = point - a;
+        const double lengthSquared = ab.x * ab.x + ab.y * ab.y;
+        const double t = lengthSquared == 0.0 ? 0.0 : std::clamp((ap.x * ab.x + ap.y * ab.y) / lengthSquared, 0.0, 1.0);
+        const Vec2 d = point - (a + ab * t);
+        const double squared = d.x * d.x + d.y * d.y;
+        if (squared < bestSquared) {
+            bestSquared = squared;
+            bestDistance = m_cumulative[i - 1] + t * (m_cumulative[i] - m_cumulative[i - 1]);
+        }
+    }
+    return bestDistance;
+}
 Path::Path(std::vector<Vec2> waypoints)
     : m_waypoints(std::move(waypoints))
 {

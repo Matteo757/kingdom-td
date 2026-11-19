@@ -53,9 +53,19 @@ Enemy* Tower::update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemi
     if (target == nullptr) {
         return nullptr;
     }
-    attack(*target);
+    fire(*target, enemies, path);
     m_cooldown.reset();
     return target;
+}
+
+void Tower::fire(Enemy& target, const std::vector<std::unique_ptr<Enemy>>&, const Path&)
+{
+    attack(target);
+}
+
+std::vector<Vec2> Tower::unitPositions() const
+{
+    return {};
 }
 
 const Vec2& Tower::position() const { return m_position; }

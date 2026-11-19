@@ -3,6 +3,9 @@
 #include <utility>
 #include "ktd/ArcherTower.h"
 #include "ktd/MageTower.h"
+#include "ktd/ArtilleryTower.h"
+#include "ktd/BarracksTower.h"
+#include "ktd/CannonTower.h"
 
 namespace ktd {
 namespace {
@@ -41,6 +44,9 @@ Game Game::defaultLevel()
               WaveManager(std::move(waves), 3.0, 8.0));
     game.addTower(std::make_unique<ArcherTower>(Vec2{300, 170}));
     game.addTower(std::make_unique<MageTower>(Vec2{600, 220}));
+    game.addTower(std::make_unique<CannonTower>(Vec2{520, 360}));
+    game.addTower(std::make_unique<BarracksTower>(Vec2{480, 260}, game.path()));
+    game.addTower(std::make_unique<ArtilleryTower>(Vec2{650, 430}));
     return game;
 }
 

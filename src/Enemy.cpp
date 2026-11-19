@@ -13,10 +13,20 @@ Enemy::Enemy(double health, std::uint8_t armor, std::uint8_t magicResist)
 
 void Enemy::update(double dt)
 {
-    if (isDead()) {
+    if (isDead() || m_blocked) {
         return;
     }
     m_distance += speed() * dt;
+}
+
+void Enemy::setBlocked(bool blocked)
+{
+    m_blocked = blocked;
+}
+
+bool Enemy::isBlocked() const
+{
+    return m_blocked;
 }
 
 void Enemy::takeDamage(const Damage& damage)
