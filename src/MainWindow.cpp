@@ -1,10 +1,15 @@
 #include "ktd/MainWindow.h"
 
+#include "ktd/GameView.h"
+
 namespace ktd {
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+MainWindow::MainWindow(QWidget* parent)
+    : QMainWindow(parent)
+{
     setWindowTitle("Kingdom TD");
-    resize(1024, 640);
+    setCentralWidget(new GameView(this));
+    resize(1060, 620);
 }
 
-}  // namespace ktd
+}
