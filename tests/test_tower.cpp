@@ -4,18 +4,18 @@
 #include "ktd/ArcherTower.h"
 #include "ktd/MageTower.h"
 #include "ktd/Cooldown.h"
-#include "ktd/Grunt.h"
+#include "ktd/Skeleton.h"
 #include "ktd/Path.h"
 
 using namespace ktd;
 
 namespace {
 
-std::unique_ptr<Enemy> gruntAfter(double seconds)
+std::unique_ptr<Enemy> skeletonAfter(double seconds)
 {
-    auto grunt = std::make_unique<Grunt>();
-    grunt->update(seconds);
-    return grunt;
+    auto skeleton = std::make_unique<Skeleton>();
+    skeleton->update(seconds);
+    return skeleton;
 }
 
 }
@@ -48,9 +48,9 @@ private slots:
         Path path({{0, 0}, {1000, 0}});
         ArcherTower tower({450, 0});
         std::vector<std::unique_ptr<Enemy>> enemies;
-        enemies.push_back(gruntAfter(7));
-        enemies.push_back(gruntAfter(8));
-        enemies.push_back(gruntAfter(14));
+        enemies.push_back(skeletonAfter(7));
+        enemies.push_back(skeletonAfter(8));
+        enemies.push_back(skeletonAfter(14));
         QCOMPARE(tower.findTarget(enemies, path), enemies[1].get());
     }
 
@@ -58,8 +58,8 @@ private slots:
         Path path({{0, 0}, {1000, 0}});
         ArcherTower tower({450, 0});
         std::vector<std::unique_ptr<Enemy>> enemies;
-        enemies.push_back(gruntAfter(7));
-        enemies.push_back(gruntAfter(8));
+        enemies.push_back(skeletonAfter(7));
+        enemies.push_back(skeletonAfter(8));
         enemies[1]->takeDamage({1000.0, DamageType::Magic});
         QCOMPARE(tower.findTarget(enemies, path), enemies[0].get());
     }
@@ -68,7 +68,7 @@ private slots:
         Path path({{0, 0}, {1000, 0}});
         ArcherTower tower({0, 500});
         std::vector<std::unique_ptr<Enemy>> enemies;
-        enemies.push_back(gruntAfter(7));
+        enemies.push_back(skeletonAfter(7));
         QVERIFY(tower.findTarget(enemies, path) == nullptr);
     }
 
@@ -76,7 +76,7 @@ private slots:
         Path path({{0, 0}, {1000, 0}});
         ArcherTower tower({450, 0});
         std::vector<std::unique_ptr<Enemy>> enemies;
-        enemies.push_back(gruntAfter(7));
+        enemies.push_back(skeletonAfter(7));
 
         QCOMPARE(tower.update(0.0, enemies, path), enemies[0].get());
         QCOMPARE(enemies[0]->health(), 82.0);
@@ -102,7 +102,7 @@ private slots:
         Path path({{0, 0}, {1000, 0}});
         MageTower tower({450, 0});
         std::vector<std::unique_ptr<Enemy>> enemies;
-        enemies.push_back(gruntAfter(7));
+        enemies.push_back(skeletonAfter(7));
         QCOMPARE(tower.update(0.0, enemies, path), enemies[0].get());
         QCOMPARE(enemies[0]->health(), 65.0);
     }

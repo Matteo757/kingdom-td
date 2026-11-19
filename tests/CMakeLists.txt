@@ -17,3 +17,7 @@ add_test(NAME test_wave COMMAND test_wave)
 add_executable(test_game test_game.cpp)
 target_link_libraries(test_game PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_game COMMAND test_game)
+
+add_executable(test_enemies test_enemies.cpp)
+target_link_libraries(test_enemies PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_enemies COMMAND test_enemies)

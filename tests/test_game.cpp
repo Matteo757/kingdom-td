@@ -6,17 +6,17 @@ using namespace ktd;
 
 namespace {
 
-Wave oneGrunt()
+Wave oneSkeleton()
 {
     Wave wave;
-    wave.enemies = {EnemyType::Grunt};
+    wave.enemies = {EnemyType::Skeleton};
     return wave;
 }
 
 Game makeGame(double pathLength, std::uint8_t lives)
 {
     return Game(Path({{0, 0}, {pathLength, 0}}), Player(0, lives),
-                WaveManager(std::vector<Wave>{oneGrunt()}, 0.0));
+                WaveManager(std::vector<Wave>{oneSkeleton()}, 0.0));
 }
 
 }

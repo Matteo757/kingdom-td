@@ -8,7 +8,7 @@ namespace {
 Wave makeWave(std::size_t count, double interval)
 {
     Wave wave;
-    wave.enemies.assign(count, EnemyType::Grunt);
+    wave.enemies.assign(count, EnemyType::Skeleton);
     wave.spawnInterval = interval;
     return wave;
 }

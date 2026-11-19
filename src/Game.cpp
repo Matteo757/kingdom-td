@@ -5,7 +5,23 @@
 #include "ktd/MageTower.h"
 
 namespace ktd {
+namespace {
 
+// Bouwt een wave waarin de vijandtypes om en om verschijnen.
+Wave makeWave(int skeletons, int goblins, int orcs, int darkMages)
+{
+    Wave wave;
+    wave.spawnInterval = 1.2;
+    while (skeletons > 0 || goblins > 0 || orcs > 0 || darkMages > 0) {
+        if (skeletons-- > 0) wave.enemies.push_back(EnemyType::Skeleton);
+        if (goblins-- > 0) wave.enemies.push_back(EnemyType::Goblin);
+        if (orcs-- > 0) wave.enemies.push_back(EnemyType::Orc);
+        if (darkMages-- > 0) wave.enemies.push_back(EnemyType::DarkMage);
+    }
+    return wave;
+}
+
+}
 Game::Game(Path path, Player player, WaveManager waves)
     : m_path(std::move(path))
     , m_player(player)
@@ -17,15 +33,7 @@ Game Game::defaultLevel()
 {
     std::vector<Wave> waves;
     for (int n = 1; n <= 10; ++n) {
-        Wave wave;
-        wave.spawnInterval = 1.2;
-        for (int i = 0; i < 3 + n; ++i) {
-            wave.enemies.push_back(EnemyType::Grunt);
-            if (i % 3 == 2) {
-                wave.enemies.push_back(EnemyType::Runner);
-            }
-        }
-        waves.push_back(std::move(wave));
+        waves.push_back(makeWave(2 + n, n, n / 2, n / 3));
     }
 
     Game game(Path({{100, 100}, {400, 100}, {400, 300}, {800, 300}, {800, 480}}),

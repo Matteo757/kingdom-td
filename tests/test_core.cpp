@@ -1,8 +1,8 @@
 #include <QtTest>
 #include <stdexcept>
 #include "ktd/Path.h"
-#include "ktd/Grunt.h"
-#include "ktd/Runner.h"
+#include "ktd/Skeleton.h"
+#include "ktd/Goblin.h"
 
 using namespace ktd;
 
@@ -40,36 +40,36 @@ private slots:
     }
 
     void physicalDamageUsesArmor() {
-        Grunt grunt;
-        grunt.takeDamage({50.0, DamageType::Physical});
-        QCOMPARE(grunt.health(), 55.0);
+        Skeleton skeleton;
+        skeleton.takeDamage({50.0, DamageType::Physical});
+        QCOMPARE(skeleton.health(), 55.0);
     }
 
     void magicDamageIgnoresArmor() {
-        Grunt grunt;
-        grunt.takeDamage({50.0, DamageType::Magic});
-        QCOMPARE(grunt.health(), 50.0);
+        Skeleton skeleton;
+        skeleton.takeDamage({50.0, DamageType::Magic});
+        QCOMPARE(skeleton.health(), 50.0);
     }
 
     void enemyDiesAtZeroHealth() {
-        Runner runner;
-        QVERIFY(!runner.isDead());
-        runner.takeDamage({1000.0, DamageType::Physical});
-        QVERIFY(runner.isDead());
-        QCOMPARE(runner.health(), 0.0);
+        Goblin goblin;
+        QVERIFY(!goblin.isDead());
+        goblin.takeDamage({1000.0, DamageType::Physical});
+        QVERIFY(goblin.isDead());
+        QCOMPARE(goblin.health(), 0.0);
     }
 
     void enemyMovesWithSpeed() {
-        Runner runner;
-        runner.update(2.0);
-        QCOMPARE(runner.distance(), 220.0);
+        Goblin goblin;
+        goblin.update(2.0);
+        QCOMPARE(goblin.distance(), 220.0);
     }
 
     void deadEnemyDoesNotMove() {
-        Runner runner;
-        runner.takeDamage({1000.0, DamageType::Magic});
-        runner.update(1.0);
-        QCOMPARE(runner.distance(), 0.0);
+        Goblin goblin;
+        goblin.takeDamage({1000.0, DamageType::Magic});
+        goblin.update(1.0);
+        QCOMPARE(goblin.distance(), 0.0);
     }
 };
 

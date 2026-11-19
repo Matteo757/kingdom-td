@@ -8,6 +8,21 @@
 
 namespace ktd {
 
+namespace {
+
+QColor colorFor(EnemyType type)
+{
+    switch (type) {
+    case EnemyType::Goblin:   return QColor(80, 200, 80);
+    case EnemyType::Skeleton: return QColor(230, 230, 210);
+    case EnemyType::Orc:      return QColor(30, 100, 40);
+    case EnemyType::DarkMage: return QColor(90, 30, 130);
+    }
+    return Qt::red;
+}
+
+}
+
 GameView::GameView(QWidget* parent)
     : QGraphicsView(parent)
     , m_game(Game::defaultLevel())
@@ -63,7 +78,7 @@ void GameView::drawTower(const Tower& tower)
 
 void GameView::addEnemyItem(const SpawnEvent& event)
 {
-    const QColor color = event.type == EnemyType::Runner ? QColor(Qt::yellow) : QColor(Qt::red);
+    const QColor color = colorFor(event.type);
     QGraphicsEllipseItem* item = m_scene->addEllipse(-10, -10, 20, 20, QPen(Qt::black), QBrush(color));
     const Vec2 start = m_game.path().pointAt(0);
     item->setPos(start.x, start.y);
