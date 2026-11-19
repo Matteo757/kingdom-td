@@ -4,29 +4,46 @@
 #include <QGraphicsEllipseItem>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QString>
 #include <QTimer>
-#include <memory>
-#include "ktd/Enemy.h"
-#include "ktd/Path.h"
+#include <unordered_map>
+#include "ktd/Game.h"
 
 namespace ktd {
 
+// De view tekent alleen nog en stuurt signals uit; alle spelregels zitten in Game.
 class GameView : public QGraphicsView {
     Q_OBJECT
 
 public:
     explicit GameView(QWidget* parent = nullptr);
 
+    const Player& player() const;
+
+signals:
+    void goldChanged(int gold);
+    void livesChanged(int lives);
+    void enemyReachedEnd();
+    void gameOver();
+    void gameWon();
+
+protected:
+    void resizeEvent(QResizeEvent* event) override;
+
 private slots:
     void tick();
 
 private:
-    void spawnEnemy();
+    void drawPath();
+    void drawTower(const Tower& tower);
+    void addEnemyItem(const SpawnEvent& event);
+    void showShot(const Shot& shot);
+    void applyEvents(const FrameEvents& events);
+    void showEndText(const QString& text);
 
-    Path m_path;
+    Game m_game;
     QGraphicsScene* m_scene;
-    QGraphicsEllipseItem* m_enemyItem;
-    std::unique_ptr<Enemy> m_enemy;
+    std::unordered_map<const Enemy*, QGraphicsEllipseItem*> m_items;
     QTimer m_timer;
     QElapsedTimer m_clock;
 };

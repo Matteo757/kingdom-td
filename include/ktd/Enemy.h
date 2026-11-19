@@ -19,6 +19,7 @@ public:
     // speed() en name() zijn per vijandtype anders; via een Enemy-pointer wordt automatisch de juiste versie van Grunt of Runner opgeroepen.
     virtual double speed() const = 0;
     virtual std::string name() const = 0;
+    virtual int reward() const = 0;
 
     void update(double dt);
     void takeDamage(const Damage& damage);

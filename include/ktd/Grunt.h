@@ -12,6 +12,7 @@ public:
 
     double speed() const override { return 60.0; }
     std::string name() const override { return "Grunt"; }
+    int reward() const override { return 10; }
 };
 
 }
