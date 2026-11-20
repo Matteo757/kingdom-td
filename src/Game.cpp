@@ -1,5 +1,6 @@
 #include "ktd/Game.h"
 
+#include <stdexcept>
 #include <utility>
 
 namespace ktd {
@@ -18,6 +19,48 @@ Wave makeWave(int skeletons, int goblins, int orcs, int darkMages)
     return wave;
 }
 
+std::vector<Wave> tenWaves()
+{
+    std::vector<Wave> waves;
+    for (int n = 1; n <= 10; ++n) {
+        waves.push_back(makeWave(2 + n, n, n / 2, n / 3));
+    }
+    return waves;
+}
+
+// Alle coordinaten staan in sceneruimte (1024x576): de kaartafbeelding wordt op diezelfde grootte getekend.
+
+// Level 1: vijanden komen vanaf de linkerrand en lopen naar het blauwe kasteel rechts (jouw basis).
+Game makeLevelOne()
+{
+    std::vector<Vec2> route = {
+        {0, 236},   {36, 245},  {135, 230}, {177, 231}, {262, 262}, {317, 267}, {426, 232},
+        {473, 231}, {538, 250}, {641, 304}, {695, 315}, {739, 317}, {845, 292}, {969, 298},
+        {985, 293}
+    };
+    // Eén bouwplek per bordje op de kaart (midden van de zandcirkel).
+    std::vector<Vec2> slots = {
+        {177, 307}, {291, 189}, {449, 302}, {573, 202}, {610, 370}, {771, 242}, {851, 371}
+    };
+    return Game(Path(std::move(route)), Player(220, 20), WaveManager(tenWaves(), 3.0, 8.0), std::move(slots));
+}
+
+// Level 3: van het kasteel linksboven over de brug naar de uitgang rechtsonder.
+Game makeLevelThree()
+{
+    std::vector<Vec2> route = {
+        {61, 107},  {77, 124},  {124, 146}, {205, 217}, {250, 224}, {323, 213}, {384, 213},
+        {424, 224}, {457, 254}, {469, 293}, {464, 319}, {427, 350}, {352, 368}, {321, 393},
+        {315, 409}, {317, 434}, {352, 474}, {404, 488}, {461, 486}, {557, 455}, {590, 438},
+        {660, 430}, {752, 460}, {800, 456}, {859, 511}, {877, 511}, {929, 532}, {998, 533}
+    };
+    std::vector<Vec2> slots = {
+        {173, 283}, {267, 154}, {360, 287}, {414, 426}, {506, 397}, {543, 168},
+        {645, 500}, {672, 300}, {731, 167}, {764, 393}, {877, 268}
+    };
+    return Game(Path(std::move(route)), Player(220, 20), WaveManager(tenWaves(), 3.0, 8.0), std::move(slots));
+}
+
 }
 
 Game::Game(Path path, Player player, WaveManager waves, std::vector<Vec2> slotPositions)
@@ -32,15 +75,19 @@ Game::Game(Path path, Player player, WaveManager waves, std::vector<Vec2> slotPo
 
 Game Game::defaultLevel()
 {
-    std::vector<Wave> waves;
-    for (int n = 1; n <= 10; ++n) {
-        waves.push_back(makeWave(2 + n, n, n / 2, n / 3));
-    }
+    return level(1);
+}
 
-    return Game(Path({{100, 100}, {400, 100}, {400, 300}, {800, 300}, {800, 480}}),
-                Player(220, 20),
-                WaveManager(std::move(waves), 3.0, 8.0),
-                {{300, 170}, {600, 220}, {520, 360}, {480, 260}, {650, 430}});
+Game Game::level(int number)
+{
+    switch (number) {
+    case 1:
+        return makeLevelOne();
+    case 3:
+        return makeLevelThree();
+    default:
+        throw std::invalid_argument("Unknown level");
+    }
 }
 
 void Game::addTower(std::unique_ptr<Tower> tower)

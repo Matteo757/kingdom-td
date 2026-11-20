@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget* parent)
     auto* central = new QWidget(this);
     auto* layout = new QVBoxLayout(central);
     auto* hud = new Hud(central);
-    auto* view = new GameView(central);
+    auto* view = new GameView(1, central);
     layout->addWidget(hud);
     layout->addWidget(view);
     setCentralWidget(central);

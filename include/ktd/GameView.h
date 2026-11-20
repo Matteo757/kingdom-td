@@ -2,10 +2,13 @@
 
 #include <QElapsedTimer>
 #include <QGraphicsEllipseItem>
+#include <QGraphicsPathItem>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsRectItem>
 #include <QGraphicsScene>
 #include <QGraphicsSimpleTextItem>
 #include <QGraphicsView>
+#include <QKeyEvent>
 #include <QPoint>
 #include <QString>
 #include <QTimer>
@@ -20,7 +23,7 @@ class GameView : public QGraphicsView {
     Q_OBJECT
 
 public:
-    explicit GameView(QWidget* parent = nullptr);
+    explicit GameView(int level, QWidget* parent = nullptr);
 
     const Player& player() const;
 
@@ -34,6 +37,7 @@ signals:
 protected:
     void resizeEvent(QResizeEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 private slots:
     void tick();
@@ -42,14 +46,16 @@ private:
     struct SlotView {
         QGraphicsEllipseItem* marker = nullptr;
         QGraphicsEllipseItem* range = nullptr;
-        QGraphicsRectItem* body = nullptr;
+        QGraphicsPixmapItem* body = nullptr;
         QGraphicsSimpleTextItem* label = nullptr;
     };
 
+    void drawMap(int level);
     void drawPath();
     void drawSlots();
     void showTower(std::size_t index);
     void refreshLabel(std::size_t index);
+    void refreshSprite(std::size_t index);
     void openMenu(std::size_t index, const QPoint& globalPos);
     void build(std::size_t index, TowerType type);
     void upgrade(std::size_t index);
@@ -62,6 +68,7 @@ private:
 
     Game m_game;
     QGraphicsScene* m_scene;
+    QGraphicsPathItem* m_pathItem = nullptr;
     std::unordered_map<const Enemy*, QGraphicsEllipseItem*> m_items;
     std::vector<SlotView> m_slotViews;
     std::vector<QGraphicsEllipseItem*> m_unitItems;

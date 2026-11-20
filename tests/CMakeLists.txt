@@ -29,3 +29,7 @@ add_test(NAME test_build COMMAND test_build)
 add_executable(test_spell test_spell.cpp)
 target_link_libraries(test_spell PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_spell COMMAND test_spell)
+
+add_executable(test_level test_level.cpp)
+target_link_libraries(test_level PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_level COMMAND test_level)

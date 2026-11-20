@@ -1,12 +1,15 @@
 #include "ktd/GameView.h"
 
 #include <QAction>
+#include <QDebug>
 #include <QFont>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsTextItem>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainterPath>
 #include <QPen>
+#include <QPixmap>
 #include <algorithm>
 #include <cmath>
 #include "ktd/Prices.h"
@@ -17,6 +20,9 @@ namespace ktd {
 namespace {
 
 constexpr double kSlotRadius = 22.0;
+constexpr double kSpriteWidth = 100.0;  // standaardbreedte van een toren in sceneruimte (groter = toren groter)
+constexpr double kSpriteDrop = 18.0;    // hoeveel px de onderkant van de toren onder het midden van de bouwplek ligt (groter = lager)
+constexpr int kSpriteSupersample = 2;   // sprite wordt 2x zo groot voorgeschaald voor een scherper beeld
 
 constexpr TowerType kBuildable[] = {
     TowerType::Archer, TowerType::Cannon, TowerType::Mage, TowerType::Barracks, TowerType::Artillery
@@ -33,6 +39,44 @@ QColor colorFor(EnemyType type)
     return Qt::red;
 }
 
+QString spriteName(TowerType type)
+{
+    switch (type) {
+    case TowerType::Archer:    return "Archer-Tower";
+    case TowerType::Cannon:    return "Cannon-Tower";
+    case TowerType::Mage:      return "Mage-Tower";
+    case TowerType::Barracks:  return "Barracks";
+    case TowerType::Artillery: return "Artillery-Tower";
+    }
+    return QString();
+}
+
+// Schaal per toren: 1.0 = standaardbreedte. Pas een getal aan om één soort toren groter of kleiner te maken.
+double spriteScale(TowerType type)
+{
+    switch (type) {
+    case TowerType::Archer:    return 1.0;
+    case TowerType::Cannon:    return 1.0;
+    case TowerType::Mage:      return 1.0;
+    case TowerType::Barracks:  return 1.0;
+    case TowerType::Artillery: return 1.0;
+    }
+    return 1.0;
+}
+
+// Bestanden heten bv. Archer-TowerLVL1.png. Ontbreekt een sprite voor een hoger level,
+// dan wordt de sprite van het dichtstbijzijnde lagere level gebruikt.
+QPixmap towerSprite(TowerType type, int level)
+{
+    for (int l = level; l >= 1; --l) {
+        const QPixmap pixmap(QString(":/assets/buildings/%1LVL%2.png").arg(spriteName(type)).arg(l));
+        if (!pixmap.isNull()) {
+            return pixmap;
+        }
+    }
+    return QPixmap();
+}
+
 QColor colorFor(TowerType type)
 {
     switch (type) {
@@ -47,18 +91,20 @@ QColor colorFor(TowerType type)
 
 }
 
-GameView::GameView(QWidget* parent)
+GameView::GameView(int level, QWidget* parent)
     : QGraphicsView(parent)
-    , m_game(Game::defaultLevel())
+    , m_game(Game::level(level))
     , m_scene(new QGraphicsScene(this))
 {
     m_scene->setSceneRect(0, 0, 1024, 576);
     m_scene->setBackgroundBrush(QColor(90, 140, 70));
     setScene(m_scene);
     setRenderHint(QPainter::Antialiasing);
+    setRenderHint(QPainter::SmoothPixmapTransform);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
+    drawMap(level);
     drawPath();
     drawSlots();
 
@@ -107,6 +153,30 @@ void GameView::mousePressEvent(QMouseEvent* event)
     QGraphicsView::mousePressEvent(event);
 }
 
+void GameView::keyPressEvent(QKeyEvent* event)
+{
+    // P toont of verbergt de route (handig om de waypoints met de kaart te vergelijken).
+    if (event->key() == Qt::Key_P && m_pathItem != nullptr) {
+        m_pathItem->setVisible(!m_pathItem->isVisible());
+        return;
+    }
+    QGraphicsView::keyPressEvent(event);
+}
+
+void GameView::drawMap(int level)
+{
+    const QString file = QString(":/assets/maps/level%1.png").arg(level);
+    const QPixmap map(file);
+    if (map.isNull()) {
+        qWarning() << "Kaart niet gevonden:" << file;
+        return;
+    }
+    QGraphicsPixmapItem* background = m_scene->addPixmap(map);
+    background->setTransformationMode(Qt::SmoothTransformation);
+    background->setScale(m_scene->width() / map.width());
+    background->setZValue(-10);
+}
+
 void GameView::drawPath()
 {
     const std::vector<Vec2>& points = m_game.path().waypoints();
@@ -114,8 +184,9 @@ void GameView::drawPath()
     for (std::size_t i = 1; i < points.size(); ++i) {
         line.lineTo(points[i].x, points[i].y);
     }
-    QGraphicsPathItem* path = m_scene->addPath(line, QPen(QColor(150, 110, 60), 28, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    path->setZValue(-2);
+    m_pathItem = m_scene->addPath(line, QPen(QColor(255, 0, 255, 180), 4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    m_pathItem->setZValue(-2);
+    m_pathItem->setVisible(false);
 }
 
 void GameView::drawSlots()
@@ -141,13 +212,37 @@ void GameView::showTower(std::size_t index)
     view.range = m_scene->addEllipse(pos.x - r, pos.y - r, 2 * r, 2 * r,
                                      QPen(QColor(255, 255, 255, 90)), QBrush(QColor(255, 255, 255, 30)));
     view.range->setZValue(-1);
-    view.body = m_scene->addRect(pos.x - 14, pos.y - 14, 28, 28, QPen(Qt::black), QBrush(colorFor(tower.type())));
-    view.body->setZValue(2);
+    view.body = m_scene->addPixmap(QPixmap());
+    view.body->setTransformationMode(Qt::SmoothTransformation);
+    view.body->setPos(pos.x, pos.y);
+    view.body->setZValue(2 + pos.y / 1000.0);  // torens lager op het scherm staan voor torens erboven
     view.label = m_scene->addSimpleText("");
     view.label->setBrush(Qt::white);
-    view.label->setPos(pos.x - 14, pos.y + 16);
+    view.label->setPos(pos.x - 14, pos.y + kSpriteDrop);
     view.label->setZValue(3);
+    refreshSprite(index);
     refreshLabel(index);
+}
+
+void GameView::refreshSprite(std::size_t index)
+{
+    const Tower& tower = *m_game.buildSlots()[index].tower;
+    QGraphicsPixmapItem* body = m_slotViews[index].body;
+
+    QPixmap sprite = towerSprite(tower.type(), tower.level());
+    if (sprite.isNull()) {
+        // Geen sprite gevonden: vervang door een gekleurd vlak zodat de toren zichtbaar blijft.
+        sprite = QPixmap(100, 100);
+        sprite.fill(colorFor(tower.type()));
+    }
+    const double width = kSpriteWidth * spriteScale(tower.type());
+    sprite = sprite.scaledToWidth(int(width * kSpriteSupersample), Qt::SmoothTransformation);
+
+    // De onderkant van de sprite ligt kSpriteDrop px onder het midden van de bouwplek,
+    // zodat de grasvoet de hele zandcirkel van de kaart bedekt.
+    body->setPixmap(sprite);
+    body->setScale(1.0 / kSpriteSupersample);
+    body->setOffset(-sprite.width() / 2.0, kSpriteDrop * kSpriteSupersample - sprite.height());
 }
 
 void GameView::refreshLabel(std::size_t index)
@@ -198,6 +293,7 @@ void GameView::upgrade(std::size_t index)
     if (!m_game.upgradeTower(index)) {
         return;
     }
+    refreshSprite(index);
     refreshLabel(index);
     emit goldChanged(m_game.player().gold());
 }

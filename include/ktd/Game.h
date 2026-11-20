@@ -50,6 +50,7 @@ public:
     Game(Path path, Player player, WaveManager waves, std::vector<Vec2> slotPositions = {});
 
     static Game defaultLevel();
+    static Game level(int number);
 
     void addTower(std::unique_ptr<Tower> tower);
     bool canBuild(std::size_t slot, TowerType type) const;

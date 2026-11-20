@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>assets/maps/level1.png</file>
+        <file>assets/maps/level3.png</file>
+        <file>assets/buildings/Archer-TowerLVL1.png</file>
+        <file>assets/buildings/Artillery-TowerLVL1.png</file>
+        <file>assets/buildings/BarracksLVL1.png</file>
+        <file>assets/buildings/Cannon-TowerLVL1.png</file>
+        <file>assets/buildings/Mage-TowerLVL1.png</file>
+    </qresource>
+</RCC>
