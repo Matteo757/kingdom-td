@@ -7,5 +7,10 @@
         <file>assets/buildings/BarracksLVL1.png</file>
         <file>assets/buildings/Cannon-TowerLVL1.png</file>
         <file>assets/buildings/Mage-TowerLVL1.png</file>
+        <file>assets/buildings/Archer-TowerLVL2.png</file>
+        <file>assets/buildings/Artillery-TowerLVL2.png</file>
+        <file>assets/buildings/BarracksLVL2.png</file>
+        <file>assets/buildings/Cannon-TowerLVL2.png</file>
+        <file>assets/buildings/Mage-TowerLVL2.png</file>
     </qresource>
 </RCC>
