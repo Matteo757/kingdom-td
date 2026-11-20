@@ -55,11 +55,11 @@ QString spriteName(TowerType type)
 double spriteScale(TowerType type)
 {
     switch (type) {
-    case TowerType::Archer:    return 1.0;
-    case TowerType::Cannon:    return 1.0;
-    case TowerType::Mage:      return 1.0;
-    case TowerType::Barracks:  return 1.0;
-    case TowerType::Artillery: return 1.0;
+    case TowerType::Archer:    return 0.8;
+    case TowerType::Cannon:    return 0.8;
+    case TowerType::Mage:      return 0.8;
+    case TowerType::Barracks:  return 0.8;
+    case TowerType::Artillery: return 0.8;
     }
     return 1.0;
 }
