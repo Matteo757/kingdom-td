@@ -13,7 +13,10 @@
 #include <QPoint>
 #include <QString>
 #include <QTimer>
+#include <array>
 #include <cstddef>
+#include <QPixmap>
+#include <QPointF>
 #include <unordered_map>
 #include <vector>
 #include "ktd/Game.h"
@@ -64,6 +67,8 @@ private:
     void upgrade(std::size_t index);
     void addEnemyItem(const SpawnEvent& event);
     void showShot(const Shot& shot);
+    void updateShots(double dt);
+    void loadProjectileSprites();
     void applyEvents(const FrameEvents& events);
     void updateUnits();
     void showEndText(const QString& text);
@@ -75,6 +80,19 @@ private:
     std::unordered_map<const Enemy*, QGraphicsEllipseItem*> m_items;
     std::vector<SlotView> m_slotViews;
     std::vector<QGraphicsEllipseItem*> m_unitItems;
+
+    // Een kogel die over het scherm vliegt. De schade is al toegebracht in Game::update;
+    // dit is alleen de weergave, dus de spellogica blijft zonder Qt testbaar.
+    struct FlyingShot {
+        QGraphicsPixmapItem* item = nullptr;
+        const Enemy* target = nullptr;
+        QPointF from;
+        QPointF to;
+        double elapsed = 0.0;
+        double duration = 0.0;
+    };
+    std::vector<FlyingShot> m_flyingShots;
+    std::array<std::array<QPixmap, 3>, 4> m_projectileSprites;   // [soort][stage - 1]
     QTimer m_timer;
     QElapsedTimer m_clock;
     std::size_t m_shownWave = 0;

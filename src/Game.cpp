@@ -158,7 +158,8 @@ FrameEvents Game::update(double dt)
     for (const auto& tower : m_towers) {
         const Enemy* target = tower->update(dt, m_enemies, m_path);
         if (target != nullptr) {
-            events.shots.push_back({tower->position(), m_path.pointAt(target->distance()), tower->damageType()});
+            events.shots.push_back({tower->position(), m_path.pointAt(target->distance()), tower->damageType(),
+                                    tower->type(), tower->level(), target});
         }
     }
 

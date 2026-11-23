@@ -25,6 +25,9 @@ struct Shot {
     Vec2 from;
     Vec2 to;
     DamageType type;
+    TowerType tower;         // bepaalt welke kogel-sprite getoond wordt
+    std::uint8_t level;      // torenlevel = stage (1..3) van de sprite
+    const Enemy* target;     // alleen als sleutel om de vijand op het scherm te volgen, nooit dereferencen
 };
 
 struct SpawnEvent {

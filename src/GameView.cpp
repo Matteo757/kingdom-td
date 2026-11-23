@@ -78,6 +78,28 @@ QPixmap towerSprite(TowerType type, int level)
     return QPixmap();
 }
 
+// Welke kogel hoort bij welke toren. De sprites wijzen naar rechts; de kop (waar de kogel raakt) zit rechts.
+// 'headInset' = pixels van de rechterrand tot het zwaartepunt van de kop (bij een pijl de punt, bij een bol het midden).
+struct ProjectileStyle {
+    int kind;                // index in m_projectileSprites
+    const char* name;
+    double scale;            // sprites zijn groot (ca. 200 px), de scene is 1024 px breed
+    double headInset;
+    double speed;            // px per seconde in sceneruimte
+};
+
+bool projectileStyle(TowerType type, ProjectileStyle& out)
+{
+    switch (type) {
+    case TowerType::Archer:    out = {0, "Arrow",      0.17, 0.0,  900.0}; return true;
+    case TowerType::Mage:      out = {1, "MageBall",   0.15, 65.0, 600.0}; return true;
+    case TowerType::Cannon:    out = {2, "Cannonball", 0.20, 57.0, 500.0}; return true;
+    case TowerType::Artillery: out = {3, "Rocket",     0.17, 0.0,  450.0}; return true;
+    case TowerType::Barracks:  return false;   // soldaten vechten zelf, er is geen kogel
+    }
+    return false;
+}
+
 QColor colorFor(TowerType type)
 {
     switch (type) {
@@ -108,6 +130,7 @@ GameView::GameView(Game game, int level, QWidget* parent)
     drawMap(level);
     drawPath();
     drawSlots();
+    loadProjectileSprites();
 
     connect(&m_timer, &QTimer::timeout, this, &GameView::tick);
     m_timer.start(16);
@@ -314,12 +337,79 @@ void GameView::addEnemyItem(const SpawnEvent& event)
     m_items[event.enemy] = item;
 }
 
+void GameView::loadProjectileSprites()
+{
+    for (TowerType type : kBuildable) {
+        ProjectileStyle style;
+        if (!projectileStyle(type, style)) {
+            continue;
+        }
+        for (int stage = 0; stage < 3; ++stage) {
+            m_projectileSprites[style.kind][stage] = QPixmap(QString(":/assets/projectiles/%1%2.png").arg(style.name).arg(stage + 1));
+        }
+    }
+}
+
 void GameView::showShot(const Shot& shot)
 {
-    const QColor color = shot.type == DamageType::Magic ? QColor(220, 80, 255) : QColor(Qt::white);
-    QGraphicsLineItem* line = m_scene->addLine(shot.from.x, shot.from.y, shot.to.x, shot.to.y, QPen(color, 3));
-    line->setZValue(10);
-    QTimer::singleShot(80, this, [line]() { delete line; });
+    ProjectileStyle style;
+    if (!projectileStyle(shot.tower, style)) {
+        return;
+    }
+    const int stage = std::clamp(int(shot.level), 1, 3) - 1;
+    const QPixmap& pixmap = m_projectileSprites[style.kind][stage];
+
+    FlyingShot flying;
+    flying.from = QPointF(shot.from.x, shot.from.y);
+    flying.to = QPointF(shot.to.x, shot.to.y);
+    flying.target = shot.target;
+    const double distance = std::hypot(flying.to.x() - flying.from.x(), flying.to.y() - flying.from.y());
+    flying.duration = std::max(0.08, distance / style.speed);
+
+    if (pixmap.isNull()) {
+        // Sprite ontbreekt: val terug op een korte lijn zodat de aanval zichtbaar blijft.
+        const QColor color = shot.type == DamageType::Magic ? QColor(220, 80, 255) : QColor(Qt::white);
+        QGraphicsLineItem* line = m_scene->addLine(shot.from.x, shot.from.y, shot.to.x, shot.to.y, QPen(color, 3));
+        line->setZValue(10);
+        QTimer::singleShot(80, this, [line]() { delete line; });
+        return;
+    }
+
+    QGraphicsPixmapItem* item = m_scene->addPixmap(pixmap);
+    item->setTransformationMode(Qt::SmoothTransformation);
+    // Het item draait en schaalt rond zijn positie; die ligt op de kop van de kogel.
+    item->setOffset(-(pixmap.width() - style.headInset), -pixmap.height() / 2.0);
+    item->setScale(style.scale);
+    item->setZValue(10);
+    item->setPos(flying.from);
+    flying.item = item;
+    m_flyingShots.push_back(flying);
+}
+
+void GameView::updateShots(double dt)
+{
+    for (auto it = m_flyingShots.begin(); it != m_flyingShots.end();) {
+        it->elapsed += dt;
+        // Volg de vijand zolang hij er nog is; anders vlieg door naar de laatste bekende plek.
+        const auto enemyItem = m_items.find(it->target);
+        if (enemyItem != m_items.end()) {
+            it->to = enemyItem->second->pos();
+        }
+        const double t = std::min(it->elapsed / it->duration, 1.0);
+        const QPointF pos = it->from + (it->to - it->from) * t;
+        const QPointF d = it->to - pos;
+        if (std::hypot(d.x(), d.y()) > 0.5) {
+            it->item->setRotation(std::atan2(d.y(), d.x()) * 180.0 / 3.14159265358979323846);
+        }
+        it->item->setPos(pos);
+
+        if (t >= 1.0) {
+            delete it->item;
+            it = m_flyingShots.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 void GameView::showFireball(const QPointF& center)
@@ -394,6 +484,7 @@ void GameView::tick()
         m_items.at(enemy.get())->setPos(p.x, p.y);
     }
     updateUnits();
+    updateShots(dt);
 
     const std::size_t wave = m_game.waves().currentWave();
     if (wave != m_shownWave) {
