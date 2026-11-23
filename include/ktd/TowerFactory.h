@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_TOWERFACTORY_H
+#define KTD_TOWERFACTORY_H
 
 #include <memory>
 #include <string>
@@ -12,3 +13,5 @@ std::unique_ptr<Tower> makeTower(TowerType type, const Vec2& position, const Pat
 std::string towerName(TowerType type);
 
 }
+
+#endif  // KTD_TOWERFACTORY_H

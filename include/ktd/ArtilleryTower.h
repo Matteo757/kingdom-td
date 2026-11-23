@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_ARTILLERYTOWER_H
+#define KTD_ARTILLERYTOWER_H
 
 #include <cmath>
 #include "ktd/Tower.h"
@@ -38,3 +39,5 @@ protected:
 };
 
 }
+
+#endif  // KTD_ARTILLERYTOWER_H

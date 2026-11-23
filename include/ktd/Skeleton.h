@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_SKELETON_H
+#define KTD_SKELETON_H
 
 #include "ktd/Enemy.h"
 
@@ -16,3 +17,5 @@ public:
 };
 
 }
+
+#endif  // KTD_SKELETON_H

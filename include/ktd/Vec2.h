@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_VEC2_H
+#define KTD_VEC2_H
 
 namespace ktd {
 
@@ -12,3 +13,5 @@ inline Vec2 operator-(const Vec2& a, const Vec2& b) { return {a.x - b.x, a.y - b
 inline Vec2 operator*(const Vec2& a, double f) { return {a.x * f, a.y * f}; }
 
 }
+
+#endif  // KTD_VEC2_H

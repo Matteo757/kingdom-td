@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_PATH_H
+#define KTD_PATH_H
 
 #include <vector>
 #include "ktd/Vec2.h"
@@ -20,3 +21,5 @@ private:
 };
 
 }
+
+#endif  // KTD_PATH_H

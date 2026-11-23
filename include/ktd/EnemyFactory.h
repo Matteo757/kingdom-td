@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_ENEMYFACTORY_H
+#define KTD_ENEMYFACTORY_H
 
 #include <cstdint>
 #include <memory>
@@ -13,3 +14,5 @@ enum class EnemyType : std::uint8_t { Goblin, Skeleton, Orc, DarkMage };
 std::unique_ptr<Enemy> makeEnemy(EnemyType type);
 
 }
+
+#endif  // KTD_ENEMYFACTORY_H

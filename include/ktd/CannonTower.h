@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_CANNONTOWER_H
+#define KTD_CANNONTOWER_H
 
 #include "ktd/Tower.h"
 
@@ -20,3 +21,5 @@ public:
 };
 
 }
+
+#endif  // KTD_CANNONTOWER_H

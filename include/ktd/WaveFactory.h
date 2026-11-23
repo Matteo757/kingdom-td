@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_WAVEFACTORY_H
+#define KTD_WAVEFACTORY_H
 
 #include <vector>
 #include "ktd/WaveManager.h"
@@ -11,3 +12,5 @@ Wave buildWave(int number);
 std::vector<Wave> buildWaves(int count);
 
 }
+
+#endif  // KTD_WAVEFACTORY_H

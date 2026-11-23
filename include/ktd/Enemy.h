@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_ENEMY_H
+#define KTD_ENEMY_H
 
 #include <cstdint>
 #include <string>
@@ -40,3 +41,5 @@ private:
 };
 
 }
+
+#endif  // KTD_ENEMY_H

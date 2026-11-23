@@ -1,4 +1,7 @@
-#pragma once
+// Vereiste 13: 13. correct protections (for header files)
+// Include guards (#ifndef/#define/#endif) voorkomen dat deze header twee keer in dezelfde vertaaleenheid terechtkomt.
+#ifndef KTD_GAME_H
+#define KTD_GAME_H
 
 #include <cstddef>
 #include <memory>
@@ -14,6 +17,7 @@
 #include "ktd/Vec2.h"
 #include "ktd/WaveManager.h"
 #include "ktd/Fireball.h"
+#include "ktd/LevelData.h"
 
 namespace ktd {
 
@@ -51,6 +55,7 @@ public:
 
     static Game defaultLevel();
     static Game level(int number);
+    static Game fromLevel(const LevelData& data);   // bouwt een spel uit gegevens van een levelbestand
 
     void addTower(std::unique_ptr<Tower> tower);
     bool canBuild(std::size_t slot, TowerType type) const;
@@ -84,3 +89,5 @@ private:
 };
 
 }
+
+#endif  // KTD_GAME_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_GOBLIN_H
+#define KTD_GOBLIN_H
 
 #include "ktd/Enemy.h"
 
@@ -15,3 +16,5 @@ public:
 };
 
 }
+
+#endif  // KTD_GOBLIN_H

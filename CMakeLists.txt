@@ -21,8 +21,13 @@ add_library(ktd_core STATIC
     src/WaveManager.cpp
     src/Game.cpp
     src/WaveFactory.cpp
+    src/LevelLoader.cpp
 )
+find_package(Threads REQUIRED)
+
 target_include_directories(ktd_core PUBLIC include)
+target_include_directories(ktd_core PRIVATE third_party)   # nlohmann/json (single header, MIT)
+target_link_libraries(ktd_core PUBLIC Threads::Threads)
 
 add_executable(kingdom-td
     src/main.cpp
@@ -35,6 +40,12 @@ add_executable(kingdom-td
     include/ktd/Hud.h
 )
 target_link_libraries(kingdom-td PRIVATE ktd_core Qt6::Widgets)
+
+# De levelbestanden (JSON) worden naast het programma gezet; het programma leest ze bij het starten.
+add_custom_command(TARGET kingdom-td POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets/levels $<TARGET_FILE_DIR:kingdom-td>/levels
+    VERBATIM)
 
 enable_testing()
 add_subdirectory(tests)

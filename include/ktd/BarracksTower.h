@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_BARRACKSTOWER_H
+#define KTD_BARRACKSTOWER_H
 
 #include <cstddef>
 #include <memory>
@@ -34,3 +35,5 @@ private:
 };
 
 }
+
+#endif  // KTD_BARRACKSTOWER_H

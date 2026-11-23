@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_DAMAGE_H
+#define KTD_DAMAGE_H
 
 #include <cstdint>
 
@@ -12,3 +13,5 @@ struct Damage {
 };
 
 }
+
+#endif  // KTD_DAMAGE_H

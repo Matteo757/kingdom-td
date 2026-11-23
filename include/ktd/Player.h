@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_PLAYER_H
+#define KTD_PLAYER_H
 
 #include <cstdint>
 
@@ -22,3 +23,5 @@ private:
 };
 
 }
+
+#endif  // KTD_PLAYER_H

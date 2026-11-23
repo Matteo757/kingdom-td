@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_SPELL_H
+#define KTD_SPELL_H
 
 #include <memory>
 #include <vector>
@@ -34,3 +35,5 @@ private:
 };
 
 }
+
+#endif  // KTD_SPELL_H

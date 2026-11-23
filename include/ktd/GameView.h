@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_GAMEVIEW_H
+#define KTD_GAMEVIEW_H
 
 #include <QElapsedTimer>
 #include <QGraphicsEllipseItem>
@@ -23,7 +24,7 @@ class GameView : public QGraphicsView {
     Q_OBJECT
 
 public:
-    explicit GameView(int level, QWidget* parent = nullptr);
+    GameView(Game game, int level, QWidget* parent = nullptr);
 
     const Player& player() const;
     int totalWaves() const;                       // <-- 1. nieuw
@@ -80,3 +81,5 @@ private:
 };
 
 }
+
+#endif  // KTD_GAMEVIEW_H

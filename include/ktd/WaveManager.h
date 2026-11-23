@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_WAVEMANAGER_H
+#define KTD_WAVEMANAGER_H
 
 #include <cstddef>
 #include <vector>
@@ -35,3 +36,5 @@ private:
 };
 
 }
+
+#endif  // KTD_WAVEMANAGER_H

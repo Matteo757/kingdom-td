@@ -37,3 +37,11 @@ add_test(NAME test_level COMMAND test_level)
 add_executable(test_progression test_progression.cpp)
 target_link_libraries(test_progression PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_progression COMMAND test_progression)
+
+add_executable(test_levelloader test_levelloader.cpp)
+target_link_libraries(test_levelloader PRIVATE ktd_core Qt6::Test)
+add_custom_command(TARGET test_levelloader POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets/levels $<TARGET_FILE_DIR:test_levelloader>/levels
+    VERBATIM)
+add_test(NAME test_levelloader COMMAND test_levelloader)

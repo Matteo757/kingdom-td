@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_COOLDOWN_H
+#define KTD_COOLDOWN_H
 
 #include <algorithm>
 
@@ -19,3 +20,5 @@ private:
 };
 
 }
+
+#endif  // KTD_COOLDOWN_H

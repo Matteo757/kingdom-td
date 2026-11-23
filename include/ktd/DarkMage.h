@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_DARKMAGE_H
+#define KTD_DARKMAGE_H
 
 #include "ktd/Enemy.h"
 
@@ -15,3 +16,5 @@ public:
 };
 
 }
+
+#endif  // KTD_DARKMAGE_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_ORC_H
+#define KTD_ORC_H
 
 #include "ktd/Enemy.h"
 
@@ -15,3 +16,5 @@ public:
 };
 
 }
+
+#endif  // KTD_ORC_H

@@ -1,6 +1,7 @@
 #include "ktd/Game.h"
 #include "ktd/WaveFactory.h"
 
+#include <cstdint>
 #include <stdexcept>
 #include <utility>
 
@@ -69,6 +70,15 @@ Game Game::level(int number)
     default:
         throw std::invalid_argument("Unknown level");
     }
+}
+
+Game Game::fromLevel(const LevelData& data)
+{
+    // Path gooit std::invalid_argument bij minder dan twee waypoints.
+    return Game(Path(data.route),
+                Player(data.startGold, static_cast<std::uint8_t>(data.startLives)),
+                WaveManager(buildWaves(data.waveCount), 3.0, kWaveDelay),
+                data.slotPositions);
 }
 
 void Game::addTower(std::unique_ptr<Tower> tower)

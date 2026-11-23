@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_HUD_H
+#define KTD_HUD_H
 
 #include <QLabel>
 #include <QWidget>
@@ -23,3 +24,5 @@ private:
 };
 
 }
+
+#endif  // KTD_HUD_H

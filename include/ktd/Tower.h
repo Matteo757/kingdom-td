@@ -1,4 +1,7 @@
-#pragma once
+// Vereiste 13: 13. correct protections (for header files)
+// Include guards (#ifndef/#define/#endif) voorkomen dat deze header twee keer in dezelfde vertaaleenheid terechtkomt.
+#ifndef KTD_TOWER_H
+#define KTD_TOWER_H
 
 #include <cstdint>
 #include <memory>
@@ -51,3 +54,5 @@ private:
 };
 
 }
+
+#endif  // KTD_TOWER_H

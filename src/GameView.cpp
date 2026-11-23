@@ -2,6 +2,7 @@
 
 #include <QAction>
 #include <QDebug>
+#include <utility>
 #include <QFont>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsTextItem>
@@ -91,9 +92,9 @@ QColor colorFor(TowerType type)
 
 }
 
-GameView::GameView(int level, QWidget* parent)
+GameView::GameView(Game game, int level, QWidget* parent)
     : QGraphicsView(parent)
-    , m_game(Game::level(level))
+    , m_game(std::move(game))
     , m_scene(new QGraphicsScene(this))
 {
     m_scene->setSceneRect(0, 0, 1024, 576);

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_SOLDIER_H
+#define KTD_SOLDIER_H
 
 #include "ktd/Cooldown.h"
 #include "ktd/Enemy.h"
@@ -30,3 +31,5 @@ private:
 };
 
 }
+
+#endif  // KTD_SOLDIER_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KTD_FIREBALL_H
+#define KTD_FIREBALL_H
 
 #include <cmath>
 #include "ktd/Spell.h"
@@ -27,3 +28,5 @@ public:
 };
 
 }
+
+#endif  // KTD_FIREBALL_H
