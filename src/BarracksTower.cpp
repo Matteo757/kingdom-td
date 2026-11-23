@@ -21,15 +21,17 @@ bool BarracksTower::hasFreeSoldier() const
         [](const Soldier& soldier) { return soldier.alive() && soldier.target() == nullptr; });
 }
 
-void BarracksTower::attack(Enemy& target)
+// Een soldaat neemt de vijand aan: geen kogel, de soldaat doet de schade zelf.
+std::optional<Projectile> BarracksTower::attack(Enemy& target, const Path&)
 {
     for (Soldier& soldier : m_soldiers) {
         if (soldier.alive() && soldier.target() == nullptr) {
             soldier.engage(&target);
             target.setBlocked(true);
-            return;
+            break;
         }
     }
+    return std::nullopt;
 }
 
 void BarracksTower::upgrade()
@@ -44,7 +46,7 @@ void BarracksTower::upgrade()
     }
 }
 
-Enemy* BarracksTower::update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path&)
+std::optional<Projectile> BarracksTower::update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path)
 {
     const auto present = [&](const Enemy* enemy) {
         return std::any_of(enemies.begin(), enemies.end(),
@@ -65,7 +67,7 @@ Enemy* BarracksTower::update(double dt, const std::vector<std::unique_ptr<Enemy>
             break;
         }
         if (!enemy->isDead() && !enemy->isBlocked() && inReach(*enemy)) {
-            attack(*enemy);
+            attack(*enemy, path);
         }
     }
 
@@ -77,7 +79,7 @@ Enemy* BarracksTower::update(double dt, const std::vector<std::unique_ptr<Enemy>
             target->setBlocked(false);
         }
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 std::vector<Vec2> BarracksTower::unitPositions() const

@@ -4,6 +4,7 @@
 #define KTD_GAME_H
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <vector>
 #include "ktd/Damage.h"
@@ -11,6 +12,7 @@
 #include "ktd/EnemyFactory.h"
 #include "ktd/Path.h"
 #include "ktd/Player.h"
+#include "ktd/Projectile.h"
 #include "ktd/Prices.h"
 #include "ktd/Tower.h"
 #include "ktd/TowerFactory.h"
@@ -21,15 +23,6 @@
 
 namespace ktd {
 
-struct Shot {
-    Vec2 from;
-    Vec2 to;
-    DamageType type;
-    TowerType tower;         // bepaalt welke kogel-sprite getoond wordt
-    std::uint8_t level;      // torenlevel = stage (1..3) van de sprite
-    const Enemy* target;     // alleen als sleutel om de vijand op het scherm te volgen, nooit dereferencen
-};
-
 struct SpawnEvent {
     const Enemy* enemy;
     EnemyType type;
@@ -37,7 +30,6 @@ struct SpawnEvent {
 
 struct FrameEvents {
     std::vector<SpawnEvent> spawned;
-    std::vector<Shot> shots;
     std::vector<const Enemy*> removed;
     int goldEarned = 0;
     int livesLost = 0;
@@ -79,6 +71,8 @@ public:
     const std::vector<std::unique_ptr<Tower>>& towers() const;
     const std::vector<BuildSlot>& buildSlots() const;
     const std::vector<std::unique_ptr<Enemy>>& enemies() const;
+    // Kogels die nu door de lucht vliegen. Hun schade valt pas bij de inslag (zie Projectile).
+    const std::vector<Projectile>& projectiles() const;
 
     bool isGameOver() const;
     bool isWon() const;
@@ -92,6 +86,8 @@ private:
     std::vector<BuildSlot> m_slots;
     std::vector<std::unique_ptr<Tower>> m_towers;
     std::vector<std::unique_ptr<Enemy>> m_enemies;
+    std::vector<Projectile> m_projectiles;
+    std::uint64_t m_nextProjectileId = 1;
     std::unique_ptr<Spell> m_fireball = std::make_unique<Fireball>();
 };
 

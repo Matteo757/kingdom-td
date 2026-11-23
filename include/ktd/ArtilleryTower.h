@@ -1,7 +1,6 @@
 #ifndef KTD_ARTILLERYTOWER_H
 #define KTD_ARTILLERYTOWER_H
 
-#include <cmath>
 #include "ktd/Tower.h"
 
 namespace ktd {
@@ -15,27 +14,13 @@ public:
     {
     }
 
-    void attack(Enemy& target) override
+    // De raket ontploft bij de inslag en doet schade aan alle vijanden binnen kSplashRadius van het inslagpunt.
+    std::optional<Projectile> attack(Enemy& target, const Path& path) override
     {
-        target.takeDamage({damage(), damageType()});
+        return makeProjectile(target, path, kSplashRadius);
     }
 
     TowerType type() const override { return TowerType::Artillery; }
-
-protected:
-    void fire(Enemy& target, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path) override
-    {
-        const Vec2 center = path.pointAt(target.distance());
-        for (const auto& enemy : enemies) {
-            if (enemy->isDead()) {
-                continue;
-            }
-            const Vec2 d = path.pointAt(enemy->distance()) - center;
-            if (std::hypot(d.x, d.y) <= kSplashRadius) {
-                attack(*enemy);
-            }
-        }
-    }
 };
 
 }

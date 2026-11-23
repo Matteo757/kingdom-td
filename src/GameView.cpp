@@ -13,6 +13,7 @@
 #include <QPixmap>
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
 #include "ktd/Prices.h"
 #include "ktd/TowerFactory.h"
 
@@ -82,31 +83,24 @@ QPixmap towerSprite(TowerType type, int level)
     return QPixmap();
 }
 
-// Welke kogel hoort bij welke toren, en hoe hij vliegt. De sprites wijzen naar rechts; de kop (waar de kogel
-// raakt) zit rechts. 'headInset' = pixels van de rechterrand tot het zwaartepunt van de kop (bij een pijl de punt,
-// bij een bol het midden).
+// Hoe de sprite van een kogel getekend wordt. De sprites wijzen naar rechts; de kop (waar de kogel raakt) zit
+// rechts. 'headInset' = pixels van de rechterrand tot het zwaartepunt van de kop (bij een pijl de punt, bij een bol
+// het midden). Snelheid en boog staan niet hier maar in flightProfile() (Projectile.h), zodat de schade valt op het
+// moment dat de sprite inslaat.
 struct ProjectileStyle {
     int kind;                // index in m_projectileSprites
     const char* name;
     double scale;            // sprites zijn groot (ca. 200 px), de scene is 1024 px breed
     double headInset;
-    double speed;            // px per seconde langs de baan (sceneruimte)
-    double arc;              // boogtop als fractie van de afstand tot het doel (0 = rechte lijn)
-    double minArc;           // minimale boogtop in px, zodat ook een korte worp een zichtbare boog heeft
 };
 
-// Elke kogel heeft zijn eigen natuurkunde:
-//  - pijl:       gemiddelde snelheid, lage boog;
-//  - kanonskogel: rechte lijn, gemiddelde snelheid, voelt zwaar;
-//  - magiebol:   rechte lijn, veruit het snelst;
-//  - raket:      hoge, duidelijke boog en merkbaar langzamer.
 bool projectileStyle(TowerType type, ProjectileStyle& out)
 {
     switch (type) {
-    case TowerType::Archer:    out = {0, "Arrow",      0.17, 0.0,   325.0, 0.12, 10.0}; return true;
-    case TowerType::Mage:      out = {1, "MageBall",   0.15, 65.0,  750.0, 0.0,   0.0}; return true;
-    case TowerType::Cannon:    out = {2, "Cannonball", 0.20, 57.0,  190.0, 0.0,   0.0}; return true;
-    case TowerType::Artillery: out = {3, "Rocket",     0.17, 0.0,   190.0, 0.45, 60.0}; return true;
+    case TowerType::Archer:    out = {0, "Arrow",      0.17, 0.0};  return true;
+    case TowerType::Mage:      out = {1, "MageBall",   0.15, 65.0}; return true;
+    case TowerType::Cannon:    out = {2, "Cannonball", 0.20, 57.0}; return true;
+    case TowerType::Artillery: out = {3, "Rocket",     0.17, 0.0};  return true;
     case TowerType::Barracks:  return false;   // soldaten vechten zelf, er is geen kogel
     }
     return false;
@@ -368,76 +362,44 @@ void GameView::loadProjectileSprites()
     }
 }
 
-void GameView::showShot(const Shot& shot)
+// Zorgt dat er precies een sprite per kogel in Game::projectiles() is, en zet die op de plek en richting
+// die Projectile heeft berekend. Een kogel die geland is verdwijnt uit Game en dus ook van het scherm.
+void GameView::syncProjectiles()
 {
-    ProjectileStyle style;
-    if (!projectileStyle(shot.tower, style)) {
-        return;
-    }
-    const int stage = std::clamp(int(shot.level), 1, 3) - 1;
-    const QPixmap& pixmap = m_projectileSprites[style.kind][stage];
+    std::unordered_set<std::uint64_t> alive;
+    for (const Projectile& projectile : m_game.projectiles()) {
+        alive.insert(projectile.id());
 
-    FlyingShot flying;
-    flying.from = QPointF(shot.from.x, shot.from.y);
-    flying.to = QPointF(shot.to.x, shot.to.y);
-    flying.target = shot.target;
-    const double distance = std::hypot(flying.to.x() - flying.from.x(), flying.to.y() - flying.from.y());
-    flying.arcHeight = style.arc > 0.0 ? std::max(style.minArc, style.arc * distance) : 0.0;
-    // Een boog is langer dan de rechte lijn; de lengte van een vlakke parabool is bij benadering d * (1 + 8/3 * (h/d)^2).
-    // Zo hangt de vliegtijd van de boogtop en de snelheid af: de hoge raket doet er echt langer over.
-    const double ratio = distance > 1.0 ? flying.arcHeight / distance : 0.0;
-    const double pathLength = distance * (1.0 + (8.0 / 3.0) * ratio * ratio);
-    flying.duration = std::max(0.05, pathLength / style.speed);
-
-    if (pixmap.isNull()) {
-        // Sprite ontbreekt: val terug op een korte lijn zodat de aanval zichtbaar blijft.
-        const QColor color = shot.type == DamageType::Magic ? QColor(220, 80, 255) : QColor(Qt::white);
-        QGraphicsLineItem* line = m_scene->addLine(shot.from.x, shot.from.y, shot.to.x, shot.to.y, QPen(color, 3));
-        line->setZValue(10);
-        QTimer::singleShot(80, this, [line]() { delete line; });
-        return;
-    }
-
-    QGraphicsPixmapItem* item = m_scene->addPixmap(pixmap);
-    item->setTransformationMode(Qt::SmoothTransformation);
-    // Het item draait en schaalt rond zijn positie; die ligt op de kop van de kogel.
-    item->setOffset(-(pixmap.width() - style.headInset), -pixmap.height() / 2.0);
-    item->setScale(style.scale);
-    item->setZValue(10);
-    item->setPos(flying.from);
-    flying.item = item;
-    m_flyingShots.push_back(flying);
-}
-
-void GameView::updateShots(double dt)
-{
-    for (auto it = m_flyingShots.begin(); it != m_flyingShots.end();) {
-        it->elapsed += dt;
-        // Volg de vijand zolang hij er nog is; anders vlieg door naar de laatste bekende plek.
-        const auto enemyItem = m_items.find(it->target);
-        if (enemyItem != m_items.end()) {
-            it->to = enemyItem->second->pos();
+        auto it = m_projectileItems.find(projectile.id());
+        if (it == m_projectileItems.end()) {
+            QGraphicsItem* item = nullptr;
+            ProjectileStyle style;
+            if (projectileStyle(projectile.source(), style)) {
+                const QPixmap& pixmap = m_projectileSprites[style.kind][projectile.level() - 1];
+                if (!pixmap.isNull()) {
+                    auto* sprite = m_scene->addPixmap(pixmap);
+                    sprite->setTransformationMode(Qt::SmoothTransformation);
+                    // Het item draait en schaalt rond zijn positie; die ligt op de kop van de kogel.
+                    sprite->setOffset(-(pixmap.width() - style.headInset), -pixmap.height() / 2.0);
+                    sprite->setScale(style.scale);
+                    item = sprite;
+                }
+            }
+            if (item == nullptr) {
+                // Sprite ontbreekt: val terug op een stip zodat de kogel zichtbaar blijft.
+                item = m_scene->addEllipse(-4, -4, 8, 8, QPen(Qt::black, 1), QBrush(Qt::white));
+            }
+            item->setZValue(10);
+            it = m_projectileItems.emplace(projectile.id(), item).first;
         }
-        const double t = std::min(it->elapsed / it->duration, 1.0);
-        const QPointF line = it->to - it->from;
+        it->second->setPos(projectile.position().x, projectile.position().y);
+        it->second->setRotation(projectile.angleDegrees());
+    }
 
-        // Positie = rechte lijn + een parabool omhoog (schermcoordinaten: omhoog = negatieve y).
-        // De boog is 0 aan begin en eind en maximaal (arcHeight) halverwege: 4 * t * (1 - t).
-        const double lift = 4.0 * it->arcHeight * t * (1.0 - t);
-        const QPointF pos = it->from + line * t + QPointF(0.0, -lift);
-
-        // De richting van de kogel is de afgeleide van de baan: de rechte lijn plus de helling van de parabool.
-        // Daardoor kantelt een pijl of raket omhoog bij het wegschieten en omlaag bij de inslag.
-        const double liftSlope = 4.0 * it->arcHeight * (1.0 - 2.0 * t);
-        const QPointF velocity(line.x(), line.y() - liftSlope);
-        if (std::hypot(velocity.x(), velocity.y()) > 1e-6) {
-            it->item->setRotation(std::atan2(velocity.y(), velocity.x()) * 180.0 / 3.14159265358979323846);
-        }
-        it->item->setPos(pos);
-
-        if (t >= 1.0) {
-            delete it->item;
-            it = m_flyingShots.erase(it);
+    for (auto it = m_projectileItems.begin(); it != m_projectileItems.end();) {
+        if (alive.count(it->first) == 0) {
+            delete it->second;
+            it = m_projectileItems.erase(it);
         } else {
             ++it;
         }
@@ -457,9 +419,6 @@ void GameView::applyEvents(const FrameEvents& events)
 {
     for (const SpawnEvent& spawn : events.spawned) {
         addEnemyItem(spawn);
-    }
-    for (const Shot& shot : events.shots) {
-        showShot(shot);
     }
     for (const Enemy* enemy : events.removed) {
         delete m_items[enemy];
@@ -605,7 +564,7 @@ void GameView::tick()
         m_items.at(enemy.get())->setPos(p.x, p.y);
     }
     updateUnits();
-    updateShots(dt);
+    syncProjectiles();
     updateWaveButton();
 
     const std::size_t wave = m_game.waves().currentWave();

@@ -5,16 +5,17 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 #include "ktd/Cooldown.h"
 #include "ktd/Damage.h"
 #include "ktd/Enemy.h"
 #include "ktd/Path.h"
+#include "ktd/Projectile.h"
+#include "ktd/TowerType.h"
 #include "ktd/Vec2.h"
 
 namespace ktd {
-
-enum class TowerType : std::uint8_t { Archer, Cannon, Mage, Barracks, Artillery };
 
 // Vereiste 8: useful and correct abstract base class
 // Tower bundelt wat elke toren gemeen heeft (positie, bereik, schade, cooldown, level) en heeft pure virtual functies (attack, type); een toren zonder eigen gedrag kan dus nooit aangemaakt worden.
@@ -26,11 +27,12 @@ public:
     virtual ~Tower() = default;
 
     // Vereiste 9: useful and correct virtual function
-    // attack() is per toren anders (pijl, kanonskogel, spreuk, soldaat); update() en fire() zijn virtual zodat BarracksTower en ArtilleryTower het schietgedrag van de basis kunnen vervangen.
-    virtual void attack(Enemy& target) = 0;
+    // attack() is per toren anders (pijl, kanonskogel, magiebol, raket met splash, soldaat); update() is virtual zodat BarracksTower het schietgedrag van de basis kan vervangen.
+    // Een aanval levert een kogel op die pas bij de inslag schade doet; de barracks levert geen kogel (de soldaten vechten zelf).
+    virtual std::optional<Projectile> attack(Enemy& target, const Path& path) = 0;
     virtual TowerType type() const = 0;
     virtual void upgrade();
-    virtual Enemy* update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path);
+    virtual std::optional<Projectile> update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path);
     virtual std::vector<Vec2> unitPositions() const;
 
     Enemy* findTarget(const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path) const;
@@ -42,7 +44,8 @@ public:
     std::uint8_t level() const;
 
 protected:
-    virtual void fire(Enemy& target, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path);
+    // Maakt de kogel van deze toren met zijn huidige schade en level; splashRadius > 0 geeft schade in een gebied.
+    Projectile makeProjectile(Enemy& target, const Path& path, double splashRadius = 0.0) const;
 
 private:
     Vec2 m_position;

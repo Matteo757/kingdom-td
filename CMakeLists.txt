@@ -12,6 +12,7 @@ add_library(ktd_core STATIC
     src/Path.cpp
     src/Enemy.cpp
     src/Tower.cpp
+    src/Projectile.cpp
     src/Soldier.cpp
     src/Prices.cpp
     src/TowerFactory.cpp

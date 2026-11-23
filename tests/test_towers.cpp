@@ -18,6 +18,13 @@ std::unique_ptr<Enemy> skeletonAfter(double seconds)
     return skeleton;
 }
 
+// Laat een kogel vliegen tot hij geland is (maximaal 20 seconden); de vijanden staan intussen stil.
+void land(Projectile& projectile, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path)
+{
+    for (int i = 0; i < 2000 && !projectile.update(0.01, enemies, path); ++i) {
+    }
+}
+
 }
 
 class TestTowers : public QObject {
@@ -39,7 +46,11 @@ private slots:
         CannonTower tower({450, 0});
         std::vector<std::unique_ptr<Enemy>> enemies;
         enemies.push_back(skeletonAfter(7));
-        QCOMPARE(tower.update(0.0, enemies, path), enemies[0].get());
+        auto shot = tower.update(0.0, enemies, path);
+        QVERIFY(shot.has_value());
+        QCOMPARE(shot->target(), enemies[0].get());
+        QCOMPARE(enemies[0]->health(), 100.0);       // de kogel is nog onderweg: nog geen schade
+        land(*shot, enemies, path);
         QCOMPARE(enemies[0]->health(), 46.0);
     }
 
@@ -48,9 +59,8 @@ private slots:
         CannonTower tower({450, 0});
         std::vector<std::unique_ptr<Enemy>> enemies;
         enemies.push_back(skeletonAfter(7));
-        tower.update(0.0, enemies, path);
-        QVERIFY(tower.update(1.0, enemies, path) == nullptr);
-        QCOMPARE(enemies[0]->health(), 46.0);
+        QVERIFY(tower.update(0.0, enemies, path).has_value());
+        QVERIFY(!tower.update(1.0, enemies, path).has_value());
     }
 
     void artilleryHitsEnemiesWithinSplashRadius() {
@@ -60,7 +70,11 @@ private slots:
         enemies.push_back(skeletonAfter(3));
         enemies.push_back(skeletonAfter(8));
         enemies.push_back(skeletonAfter(9));
-        QCOMPARE(tower.update(0.0, enemies, path), enemies[2].get());
+        auto shot = tower.update(0.0, enemies, path);
+        QVERIFY(shot.has_value());
+        QCOMPARE(shot->target(), enemies[2].get());
+        QCOMPARE(enemies[2]->health(), 100.0);       // de raket is nog onderweg
+        land(*shot, enemies, path);
         QCOMPARE(enemies[2]->health(), 59.5);
         QCOMPARE(enemies[1]->health(), 59.5);
         QCOMPARE(enemies[0]->health(), 100.0);

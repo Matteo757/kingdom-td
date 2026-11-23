@@ -43,24 +43,24 @@ Enemy* Tower::findTarget(const std::vector<std::unique_ptr<Enemy>>& enemies, con
         [](const Enemy* a, const Enemy* b) { return a->distance() < b->distance(); });
 }
 
-Enemy* Tower::update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path)
+std::optional<Projectile> Tower::update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path)
 {
     m_cooldown.update(dt);
     if (!m_cooldown.ready()) {
-        return nullptr;
+        return std::nullopt;
     }
     Enemy* target = findTarget(enemies, path);
     if (target == nullptr) {
-        return nullptr;
+        return std::nullopt;
     }
-    fire(*target, enemies, path);
+    std::optional<Projectile> shot = attack(*target, path);
     m_cooldown.reset();
-    return target;
+    return shot;
 }
 
-void Tower::fire(Enemy& target, const std::vector<std::unique_ptr<Enemy>>&, const Path&)
+Projectile Tower::makeProjectile(Enemy& target, const Path& path, double splashRadius) const
 {
-    attack(target);
+    return Projectile(type(), m_level, m_position, target, path, {m_damage, m_type}, splashRadius);
 }
 
 std::vector<Vec2> Tower::unitPositions() const

@@ -2,6 +2,7 @@
 #include "ktd/WaveFactory.h"
 
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 
@@ -172,11 +173,20 @@ FrameEvents Game::update(double dt)
         enemy->update(dt);
     }
 
+    // Een toren schiet een kogel af; de schade volgt pas als die kogel zijn doel bereikt.
     for (const auto& tower : m_towers) {
-        const Enemy* target = tower->update(dt, m_enemies, m_path);
-        if (target != nullptr) {
-            events.shots.push_back({tower->position(), m_path.pointAt(target->distance()), tower->damageType(),
-                                    tower->type(), tower->level(), target});
+        std::optional<Projectile> shot = tower->update(dt, m_enemies, m_path);
+        if (shot) {
+            shot->setId(m_nextProjectileId++);
+            m_projectiles.push_back(std::move(*shot));
+        }
+    }
+
+    for (auto it = m_projectiles.begin(); it != m_projectiles.end();) {
+        if (it->update(dt, m_enemies, m_path)) {
+            it = m_projectiles.erase(it);   // geland: de schade is toegebracht
+        } else {
+            ++it;
         }
     }
 
@@ -201,6 +211,9 @@ void Game::removeFinishedEnemies(FrameEvents& events)
             m_player.loseLife();
             ++events.livesLost;
         }
+        for (Projectile& projectile : m_projectiles) {
+            projectile.dropTarget(enemy);   // geen pointer naar een verwijderde vijand laten hangen
+        }
         events.removed.push_back(enemy);
         it = m_enemies.erase(it);
     }
@@ -212,6 +225,7 @@ const WaveManager& Game::waves() const { return m_waves; }
 const std::vector<std::unique_ptr<Tower>>& Game::towers() const { return m_towers; }
 const std::vector<BuildSlot>& Game::buildSlots() const { return m_slots; }
 const std::vector<std::unique_ptr<Enemy>>& Game::enemies() const { return m_enemies; }
+const std::vector<Projectile>& Game::projectiles() const { return m_projectiles; }
 
 bool Game::isGameOver() const
 {

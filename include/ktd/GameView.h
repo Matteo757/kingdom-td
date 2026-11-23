@@ -15,6 +15,7 @@
 #include <QTimer>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <QPixmap>
 #include <QPointF>
 #include <unordered_map>
@@ -66,8 +67,7 @@ private:
     void build(std::size_t index, TowerType type);
     void upgrade(std::size_t index);
     void addEnemyItem(const SpawnEvent& event);
-    void showShot(const Shot& shot);
-    void updateShots(double dt);
+    void syncProjectiles();
     void loadProjectileSprites();
     void applyEvents(const FrameEvents& events);
     void updateUnits();
@@ -85,18 +85,9 @@ private:
     std::vector<SlotView> m_slotViews;
     std::vector<QGraphicsEllipseItem*> m_unitItems;
 
-    // Een kogel die over het scherm vliegt. De schade is al toegebracht in Game::update;
-    // dit is alleen de weergave, dus de spellogica blijft zonder Qt testbaar.
-    struct FlyingShot {
-        QGraphicsPixmapItem* item = nullptr;
-        const Enemy* target = nullptr;
-        QPointF from;
-        QPointF to;
-        double elapsed = 0.0;
-        double duration = 0.0;
-        double arcHeight = 0.0;   // hoogte van de boog in px (0 = rechte lijn)
-    };
-    std::vector<FlyingShot> m_flyingShots;
+    // De kogels zelf (positie, richting, schade bij inslag) leven in Game::projectiles(); de view tekent alleen
+    // een sprite per kogel, gevonden via het id van de kogel.
+    std::unordered_map<std::uint64_t, QGraphicsItem*> m_projectileItems;
     std::array<std::array<QPixmap, 3>, 4> m_projectileSprites;   // [soort][stage - 1]
 
     // Start Wave / Next Wave-knop bij het begin van het pad (een item in de scene, geen widget, zodat hij mee schaalt).

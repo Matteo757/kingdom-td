@@ -12,9 +12,9 @@ public:
     {
     }
 
-    void attack(Enemy& target) override
+    std::optional<Projectile> attack(Enemy& target, const Path& path) override
     {
-        target.takeDamage({damage(), damageType()});
+        return makeProjectile(target, path);
     }
 
     TowerType type() const override { return TowerType::Cannon; }

@@ -49,3 +49,7 @@ add_test(NAME test_levelloader COMMAND test_levelloader)
 add_executable(test_wavestart test_wavestart.cpp)
 target_link_libraries(test_wavestart PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_wavestart COMMAND test_wavestart)
+
+add_executable(test_projectile test_projectile.cpp)
+target_link_libraries(test_projectile PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_projectile COMMAND test_projectile)
