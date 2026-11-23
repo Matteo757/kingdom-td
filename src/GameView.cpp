@@ -15,6 +15,7 @@
 #include <cmath>
 #include <unordered_set>
 #include "ktd/Prices.h"
+#include "ktd/SlotMenu.h"
 #include "ktd/TowerFactory.h"
 
 namespace ktd {
@@ -29,10 +30,6 @@ constexpr double kWaveButtonHeight = 50.0;
 constexpr double kWaveButtonPathOffset = 70.0;   // px langs het pad vanaf het begin
 constexpr double kWaveButtonLift = 55.0;         // px boven het pad, zodat de eerste vijanden zichtbaar blijven
 constexpr int kSpriteSupersample = 2;   // sprite wordt 2x zo groot voorgeschaald voor een scherper beeld
-
-constexpr TowerType kBuildable[] = {
-    TowerType::Archer, TowerType::Cannon, TowerType::Mage, TowerType::Barracks, TowerType::Artillery
-};
 
 QColor colorFor(EnemyType type)
 {
@@ -140,6 +137,7 @@ GameView::GameView(Game game, int level, QWidget* parent)
     createWaveButton();
 
     connect(&m_timer, &QTimer::timeout, this, &GameView::tick);
+    connect(this, &GameView::goldChanged, this, &GameView::refreshOpenMenu);
     m_timer.start(16);
     m_clock.start();
 }
@@ -295,29 +293,45 @@ void GameView::refreshLabel(std::size_t index)
 void GameView::openMenu(std::size_t index, const QPoint& globalPos)
 {
     QMenu menu(this);
-    const Tower* tower = m_game.buildSlots()[index].tower;
+    m_openMenu = &menu;
+    m_openMenuSlot = index;
+    m_openMenuActions.clear();
 
-    if (tower == nullptr) {
-        for (TowerType type : kBuildable) {
-            const QString text = QString("%1 (%2 goud)")
-                .arg(QString::fromStdString(towerName(type)))
-                .arg(buildCost(type));
-            QAction* action = menu.addAction(text);
-            action->setEnabled(m_game.canBuild(index, type));
+    // De regels komen uit slotMenuEntries(): dezelfde functie die refreshOpenMenu() bij elke goudwijziging gebruikt.
+    for (const MenuEntry& entry : slotMenuEntries(m_game, index)) {
+        QAction* action = menu.addAction(QString::fromStdString(entry.text));
+        action->setEnabled(entry.enabled);
+        m_openMenuActions.push_back(action);
+
+        if (entry.action == MenuAction::Build) {
+            const TowerType type = entry.type;
             connect(action, &QAction::triggered, this, [this, index, type]() { build(index, type); });
+        } else if (entry.action == MenuAction::Upgrade) {
+            connect(action, &QAction::triggered, this, [this, index]() { upgrade(index); });
         }
-    } else {
-        QString text = "Maximaal level";
-        if (tower->level() < Tower::kMaxLevel) {
-            text = QString("Upgrade naar level %1 (%2 goud)")
-                .arg(int(tower->level()) + 1)
-                .arg(upgradeCost(tower->level()));
-        }
-        QAction* action = menu.addAction(text);
-        action->setEnabled(m_game.canUpgrade(index));
-        connect(action, &QAction::triggered, this, [this, index]() { upgrade(index); });
     }
     menu.exec(globalPos);
+
+    m_openMenuActions.clear();
+    m_openMenu.clear();
+}
+
+// Wordt aangeroepen via het signal goldChanged, dus bij elke verdiende of uitgegeven euro. Het goud wordt hier niet
+// bewaard: elke regel wordt opnieuw berekend uit Game, zodat het menu nooit met een oud bedrag werkt.
+void GameView::refreshOpenMenu()
+{
+    if (m_openMenu.isNull()) {
+        return;
+    }
+    const std::vector<MenuEntry> entries = slotMenuEntries(m_game, m_openMenuSlot);
+    if (entries.size() != m_openMenuActions.size()) {
+        m_openMenu->close();   // de bouwplek is veranderd (bijvoorbeeld net bebouwd): het menu klopt niet meer
+        return;
+    }
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        m_openMenuActions[i]->setText(QString::fromStdString(entries[i].text));
+        m_openMenuActions[i]->setEnabled(entries[i].enabled);
+    }
 }
 
 void GameView::build(std::size_t index, TowerType type)
@@ -351,7 +365,7 @@ void GameView::addEnemyItem(const SpawnEvent& event)
 
 void GameView::loadProjectileSprites()
 {
-    for (TowerType type : kBuildable) {
+    for (TowerType type : kBuildableTowers) {
         ProjectileStyle style;
         if (!projectileStyle(type, style)) {
             continue;
@@ -575,10 +589,16 @@ void GameView::tick()
 
     if (m_game.isGameOver()) {
         m_timer.stop();
+        if (!m_openMenu.isNull()) {
+            m_openMenu->close();   // na het einde van het spel mag er niet meer gebouwd worden
+        }
         showEndText("GAME OVER");
         emit gameOver();
     } else if (m_game.isWon()) {
         m_timer.stop();
+        if (!m_openMenu.isNull()) {
+            m_openMenu->close();
+        }
         showEndText("VICTORY");
         emit gameWon();
     }

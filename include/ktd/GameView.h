@@ -10,7 +10,10 @@
 #include <QGraphicsSimpleTextItem>
 #include <QGraphicsView>
 #include <QKeyEvent>
+#include <QAction>
+#include <QMenu>
 #include <QPoint>
+#include <QPointer>
 #include <QString>
 #include <QTimer>
 #include <array>
@@ -48,6 +51,7 @@ protected:
 
 private slots:
     void tick();
+    void refreshOpenMenu();   // werkt een geopend bouw- of upgrademenu bij zodra het goud verandert
 
 private:
     struct SlotView {
@@ -95,6 +99,11 @@ private:
     QGraphicsSimpleTextItem* m_waveTitle = nullptr;
     QGraphicsSimpleTextItem* m_waveSub = nullptr;
     QGraphicsRectItem* m_waveBar = nullptr;       // toont hoeveel van de bonustijd nog over is
+    // Het menu dat nu openstaat (als er een is). De regels worden bij elke goudwijziging opnieuw uit Game afgeleid.
+    QPointer<QMenu> m_openMenu;
+    std::size_t m_openMenuSlot = 0;
+    std::vector<QAction*> m_openMenuActions;
+
     QTimer m_timer;
     QElapsedTimer m_clock;
     std::size_t m_shownWave = 0;

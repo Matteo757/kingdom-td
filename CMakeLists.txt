@@ -23,6 +23,7 @@ add_library(ktd_core STATIC
     src/Game.cpp
     src/WaveFactory.cpp
     src/LevelLoader.cpp
+    src/SlotMenu.cpp
 )
 find_package(Threads REQUIRED)
 

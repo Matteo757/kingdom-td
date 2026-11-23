@@ -53,3 +53,7 @@ add_test(NAME test_wavestart COMMAND test_wavestart)
 add_executable(test_projectile test_projectile.cpp)
 target_link_libraries(test_projectile PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_projectile COMMAND test_projectile)
+
+add_executable(test_slotmenu test_slotmenu.cpp)
+target_link_libraries(test_slotmenu PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_slotmenu COMMAND test_slotmenu)

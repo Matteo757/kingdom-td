@@ -410,6 +410,7 @@ ctest --test-dir build --output-on-failure
 | `test_player` | goud en levens |
 | `test_progression` | moeilijkheidsopbouw over de waves |
 | `test_levelloader` | JSON inlezen, foutafhandeling en het laden in een aparte thread |
+| `test_slotmenu` | bouw- en upgrademenu: prijzen en beschikbaarheid volgen het goud van de speler |
 
 ## Bug tickets
 
