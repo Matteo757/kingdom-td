@@ -24,7 +24,7 @@ Game makeLevelOne()
     std::vector<Vec2> slots = {
         {275, 165}, {356, 295}, {497, 415}, {514, 159}, {716, 205}, {827, 358}, {895, 446}
     };
-    return Game(Path(std::move(route)), Player(1000, 20), WaveManager(buildWaves(10), 3.0, kWaveDelay), std::move(slots));
+    return Game(Path(std::move(route)), Player(1000, 20), WaveManager(buildWaves(10), 3.0, kWaveDelay, StartMode::Manual), std::move(slots));
 }
 
 // Level 3: van het kasteel linksboven over de brug naar de uitgang rechtsonder.
@@ -40,7 +40,7 @@ Game makeLevelThree()
         {173, 283}, {267, 154}, {360, 287}, {414, 426}, {506, 397}, {543, 168},
         {645, 500}, {672, 300}, {731, 167}, {764, 393}, {877, 268}
     };
-    return Game(Path(std::move(route)), Player(220, 20), WaveManager(buildWaves(10), 3.0, kWaveDelay), std::move(slots));
+    return Game(Path(std::move(route)), Player(220, 20), WaveManager(buildWaves(10), 3.0, kWaveDelay, StartMode::Manual), std::move(slots));
 }
 
 }
@@ -77,7 +77,7 @@ Game Game::fromLevel(const LevelData& data)
     // Path gooit std::invalid_argument bij minder dan twee waypoints.
     return Game(Path(data.route),
                 Player(data.startGold, static_cast<std::uint8_t>(data.startLives)),
-                WaveManager(buildWaves(data.waveCount), 3.0, kWaveDelay),
+                WaveManager(buildWaves(data.waveCount), 3.0, kWaveDelay, StartMode::Manual),
                 data.slotPositions);
 }
 
@@ -131,6 +131,23 @@ bool Game::castFireball(const Vec2& target)
 bool Game::fireballReady() const
 {
     return m_fireball->ready();
+}
+
+bool Game::canStartNextWave() const
+{
+    return !isGameOver() && m_waves.canStartNextWave();
+}
+
+int Game::startNextWave()
+{
+    if (!canStartNextWave()) {
+        return 0;
+    }
+    const int bonus = m_waves.startNextWave();
+    if (bonus > 0) {
+        m_player.addGold(bonus);
+    }
+    return bonus;
 }
 
 FrameEvents Game::update(double dt)

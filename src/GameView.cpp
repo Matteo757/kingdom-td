@@ -23,6 +23,10 @@ namespace {
 constexpr double kSlotRadius = 22.0;
 constexpr double kSpriteWidth = 90.0;  // standaardbreedte van een toren in sceneruimte (groter = toren groter)
 constexpr double kSpriteDrop = 18.0;    // hoeveel px de onderkant van de toren onder het midden van de bouwplek ligt (groter = lager)
+constexpr double kWaveButtonWidth = 132.0;
+constexpr double kWaveButtonHeight = 50.0;
+constexpr double kWaveButtonPathOffset = 70.0;   // px langs het pad vanaf het begin
+constexpr double kWaveButtonLift = 55.0;         // px boven het pad, zodat de eerste vijanden zichtbaar blijven
 constexpr int kSpriteSupersample = 2;   // sprite wordt 2x zo groot voorgeschaald voor een scherper beeld
 
 constexpr TowerType kBuildable[] = {
@@ -139,6 +143,7 @@ GameView::GameView(Game game, int level, QWidget* parent)
     drawPath();
     drawSlots();
     loadProjectileSprites();
+    createWaveButton();
 
     connect(&m_timer, &QTimer::timeout, this, &GameView::tick);
     m_timer.start(16);
@@ -178,6 +183,11 @@ void GameView::mousePressEvent(QMouseEvent* event)
     }
 
     if (event->button() == Qt::LeftButton) {
+        if (m_waveButton != nullptr && m_waveButton->isVisible()
+            && m_waveButton->contains(m_waveButton->mapFromScene(scenePos))) {
+            startNextWave();
+            return;
+        }
         const std::vector<BuildSlot>& allSlots = m_game.buildSlots();
         for (std::size_t i = 0; i < allSlots.size(); ++i) {
             const Vec2& p = allSlots[i].position;
@@ -487,6 +497,95 @@ void GameView::updateUnits()
     }
 }
 
+void GameView::createWaveButton()
+{
+    QPainterPath shape;
+    shape.addRoundedRect(-kWaveButtonWidth / 2, -kWaveButtonHeight / 2, kWaveButtonWidth, kWaveButtonHeight, 10, 10);
+    m_waveButton = m_scene->addPath(shape, QPen(Qt::white, 3), QBrush(QColor(46, 140, 60)));
+    m_waveButton->setZValue(15);
+    m_waveButton->setCursor(Qt::PointingHandCursor);
+
+    // Bij het begin van het pad, iets erboven, binnen de scene.
+    const Vec2 start = m_game.path().pointAt(kWaveButtonPathOffset);
+    const QRectF bounds = m_scene->sceneRect();
+    m_waveButton->setPos(
+        std::clamp(start.x, bounds.left() + kWaveButtonWidth / 2 + 4, bounds.right() - kWaveButtonWidth / 2 - 4),
+        std::clamp(start.y - kWaveButtonLift, bounds.top() + kWaveButtonHeight / 2 + 4, bounds.bottom() - kWaveButtonHeight / 2 - 4));
+
+    QFont titleFont("Arial", 13, QFont::Bold);
+    QFont subFont("Arial", 10, QFont::Bold);
+    m_waveTitle = new QGraphicsSimpleTextItem(m_waveButton);
+    m_waveTitle->setFont(titleFont);
+    m_waveTitle->setBrush(Qt::white);
+    m_waveSub = new QGraphicsSimpleTextItem(m_waveButton);
+    m_waveSub->setFont(subFont);
+    m_waveSub->setBrush(QColor(255, 225, 90));
+    m_waveBar = new QGraphicsRectItem(m_waveButton);
+    m_waveBar->setPen(Qt::NoPen);
+    m_waveBar->setBrush(QColor(255, 225, 90));
+
+    updateWaveButton();
+}
+
+// Wordt elke tick aangeroepen, zodat de bonus en de timer continu meelopen.
+void GameView::updateWaveButton()
+{
+    if (m_waveButton == nullptr) {
+        return;
+    }
+    const bool available = m_game.canStartNextWave();
+    m_waveButton->setVisible(available);
+    if (!available) {
+        return;
+    }
+
+    const WaveManager& waves = m_game.waves();
+    const bool first = waves.firstWavePending();
+    m_waveTitle->setText(first ? "Start Wave" : "Next Wave");
+    const QRectF title = m_waveTitle->boundingRect();
+
+    if (first) {
+        // Eerste wave: geen bonus en geen timer.
+        m_waveSub->setVisible(false);
+        m_waveBar->setVisible(false);
+        m_waveTitle->setPos(-title.width() / 2, -title.height() / 2);
+        return;
+    }
+
+    const int secondsLeft = static_cast<int>(std::floor(waves.timeUntilNextWave()));
+    m_waveSub->setText(QString("+%1 goud  (%2s)").arg(waves.earlyBonus()).arg(secondsLeft));
+    m_waveSub->setVisible(true);
+    m_waveTitle->setPos(-title.width() / 2, -kWaveButtonHeight / 2 + 4);
+    const QRectF sub = m_waveSub->boundingRect();
+    m_waveSub->setPos(-sub.width() / 2, -kWaveButtonHeight / 2 + 4 + title.height() - 3);
+
+    // Balkje onderin: vol bij 60 goud (20 s over), leeg bij 0.
+    const double window = static_cast<double>(kMaxEarlyBonus) / kEarlyBonusPerSecond;
+    const double fraction = std::clamp(waves.timeUntilNextWave() / window, 0.0, 1.0);
+    m_waveBar->setRect(-kWaveButtonWidth / 2 + 8, kWaveButtonHeight / 2 - 9, (kWaveButtonWidth - 16) * fraction, 4);
+    m_waveBar->setVisible(true);
+}
+
+void GameView::startNextWave()
+{
+    const int bonus = m_game.startNextWave();   // start de wave meteen; de eerste wave geeft geen bonus
+    if (bonus > 0) {
+        emit goldChanged(m_game.player().gold());
+        showBonusText(bonus);
+    }
+    updateWaveButton();                          // de knop verdwijnt na het klikken
+}
+
+void GameView::showBonusText(int bonus)
+{
+    QGraphicsSimpleTextItem* text = m_scene->addSimpleText(QString("+%1 goud").arg(bonus), QFont("Arial", 16, QFont::Bold));
+    text->setBrush(QColor(255, 225, 90));
+    text->setPen(QPen(Qt::black, 1));
+    text->setPos(m_waveButton->pos() - QPointF(text->boundingRect().width() / 2, 40));
+    text->setZValue(20);
+    QTimer::singleShot(1200, this, [text]() { delete text; });
+}
+
 void GameView::showEndText(const QString& text)
 {
     QGraphicsTextItem* item = m_scene->addText(text, QFont("Arial", 48, QFont::Bold));
@@ -507,6 +606,7 @@ void GameView::tick()
     }
     updateUnits();
     updateShots(dt);
+    updateWaveButton();
 
     const std::size_t wave = m_game.waves().currentWave();
     if (wave != m_shownWave) {

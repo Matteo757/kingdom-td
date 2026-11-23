@@ -67,6 +67,10 @@ public:
     bool upgradeTower(std::size_t slot);
     bool castFireball(const Vec2& target);
     bool fireballReady() const;
+    // Handmatig een wave starten (Start Wave / Next Wave-knop). Geeft het bonusgoud terug, dat meteen
+    // aan de speler wordt bijgeschreven. Er worden geen vijanden van eerdere waves verwijderd.
+    bool canStartNextWave() const;
+    int startNextWave();
     FrameEvents update(double dt);
 
     const Path& path() const;

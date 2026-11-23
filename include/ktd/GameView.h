@@ -73,6 +73,10 @@ private:
     void updateUnits();
     void showEndText(const QString& text);
     void showFireball(const QPointF& center);
+    void createWaveButton();
+    void updateWaveButton();
+    void startNextWave();
+    void showBonusText(int bonus);
 
     Game m_game;
     QGraphicsScene* m_scene;
@@ -94,6 +98,12 @@ private:
     };
     std::vector<FlyingShot> m_flyingShots;
     std::array<std::array<QPixmap, 3>, 4> m_projectileSprites;   // [soort][stage - 1]
+
+    // Start Wave / Next Wave-knop bij het begin van het pad (een item in de scene, geen widget, zodat hij mee schaalt).
+    QGraphicsPathItem* m_waveButton = nullptr;
+    QGraphicsSimpleTextItem* m_waveTitle = nullptr;
+    QGraphicsSimpleTextItem* m_waveSub = nullptr;
+    QGraphicsRectItem* m_waveBar = nullptr;       // toont hoeveel van de bonustijd nog over is
     QTimer m_timer;
     QElapsedTimer m_clock;
     std::size_t m_shownWave = 0;

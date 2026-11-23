@@ -45,3 +45,7 @@ add_custom_command(TARGET test_levelloader POST_BUILD
             ${CMAKE_SOURCE_DIR}/assets/levels $<TARGET_FILE_DIR:test_levelloader>/levels
     VERBATIM)
 add_test(NAME test_levelloader COMMAND test_levelloader)
+
+add_executable(test_wavestart test_wavestart.cpp)
+target_link_libraries(test_wavestart PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_wavestart COMMAND test_wavestart)
