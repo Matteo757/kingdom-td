@@ -90,6 +90,7 @@ private:
         QPointF to;
         double elapsed = 0.0;
         double duration = 0.0;
+        double arcHeight = 0.0;   // hoogte van de boog in px (0 = rechte lijn)
     };
     std::vector<FlyingShot> m_flyingShots;
     std::array<std::array<QPixmap, 3>, 4> m_projectileSprites;   // [soort][stage - 1]

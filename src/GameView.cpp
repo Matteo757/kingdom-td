@@ -78,23 +78,31 @@ QPixmap towerSprite(TowerType type, int level)
     return QPixmap();
 }
 
-// Welke kogel hoort bij welke toren. De sprites wijzen naar rechts; de kop (waar de kogel raakt) zit rechts.
-// 'headInset' = pixels van de rechterrand tot het zwaartepunt van de kop (bij een pijl de punt, bij een bol het midden).
+// Welke kogel hoort bij welke toren, en hoe hij vliegt. De sprites wijzen naar rechts; de kop (waar de kogel
+// raakt) zit rechts. 'headInset' = pixels van de rechterrand tot het zwaartepunt van de kop (bij een pijl de punt,
+// bij een bol het midden).
 struct ProjectileStyle {
     int kind;                // index in m_projectileSprites
     const char* name;
     double scale;            // sprites zijn groot (ca. 200 px), de scene is 1024 px breed
     double headInset;
-    double speed;            // px per seconde in sceneruimte
+    double speed;            // px per seconde langs de baan (sceneruimte)
+    double arc;              // boogtop als fractie van de afstand tot het doel (0 = rechte lijn)
+    double minArc;           // minimale boogtop in px, zodat ook een korte worp een zichtbare boog heeft
 };
 
+// Elke kogel heeft zijn eigen natuurkunde:
+//  - pijl:       gemiddelde snelheid, lage boog;
+//  - kanonskogel: rechte lijn, gemiddelde snelheid, voelt zwaar;
+//  - magiebol:   rechte lijn, veruit het snelst;
+//  - raket:      hoge, duidelijke boog en merkbaar langzamer.
 bool projectileStyle(TowerType type, ProjectileStyle& out)
 {
     switch (type) {
-    case TowerType::Archer:    out = {0, "Arrow",      0.17, 0.0,  900.0}; return true;
-    case TowerType::Mage:      out = {1, "MageBall",   0.15, 65.0, 600.0}; return true;
-    case TowerType::Cannon:    out = {2, "Cannonball", 0.20, 57.0, 500.0}; return true;
-    case TowerType::Artillery: out = {3, "Rocket",     0.17, 0.0,  450.0}; return true;
+    case TowerType::Archer:    out = {0, "Arrow",      0.17, 0.0,   325.0, 0.12, 10.0}; return true;
+    case TowerType::Mage:      out = {1, "MageBall",   0.15, 65.0,  750.0, 0.0,   0.0}; return true;
+    case TowerType::Cannon:    out = {2, "Cannonball", 0.20, 57.0,  190.0, 0.0,   0.0}; return true;
+    case TowerType::Artillery: out = {3, "Rocket",     0.17, 0.0,   190.0, 0.45, 60.0}; return true;
     case TowerType::Barracks:  return false;   // soldaten vechten zelf, er is geen kogel
     }
     return false;
@@ -364,7 +372,12 @@ void GameView::showShot(const Shot& shot)
     flying.to = QPointF(shot.to.x, shot.to.y);
     flying.target = shot.target;
     const double distance = std::hypot(flying.to.x() - flying.from.x(), flying.to.y() - flying.from.y());
-    flying.duration = std::max(0.08, distance / style.speed);
+    flying.arcHeight = style.arc > 0.0 ? std::max(style.minArc, style.arc * distance) : 0.0;
+    // Een boog is langer dan de rechte lijn; de lengte van een vlakke parabool is bij benadering d * (1 + 8/3 * (h/d)^2).
+    // Zo hangt de vliegtijd van de boogtop en de snelheid af: de hoge raket doet er echt langer over.
+    const double ratio = distance > 1.0 ? flying.arcHeight / distance : 0.0;
+    const double pathLength = distance * (1.0 + (8.0 / 3.0) * ratio * ratio);
+    flying.duration = std::max(0.05, pathLength / style.speed);
 
     if (pixmap.isNull()) {
         // Sprite ontbreekt: val terug op een korte lijn zodat de aanval zichtbaar blijft.
@@ -396,10 +409,19 @@ void GameView::updateShots(double dt)
             it->to = enemyItem->second->pos();
         }
         const double t = std::min(it->elapsed / it->duration, 1.0);
-        const QPointF pos = it->from + (it->to - it->from) * t;
-        const QPointF d = it->to - pos;
-        if (std::hypot(d.x(), d.y()) > 0.5) {
-            it->item->setRotation(std::atan2(d.y(), d.x()) * 180.0 / 3.14159265358979323846);
+        const QPointF line = it->to - it->from;
+
+        // Positie = rechte lijn + een parabool omhoog (schermcoordinaten: omhoog = negatieve y).
+        // De boog is 0 aan begin en eind en maximaal (arcHeight) halverwege: 4 * t * (1 - t).
+        const double lift = 4.0 * it->arcHeight * t * (1.0 - t);
+        const QPointF pos = it->from + line * t + QPointF(0.0, -lift);
+
+        // De richting van de kogel is de afgeleide van de baan: de rechte lijn plus de helling van de parabool.
+        // Daardoor kantelt een pijl of raket omhoog bij het wegschieten en omlaag bij de inslag.
+        const double liftSlope = 4.0 * it->arcHeight * (1.0 - 2.0 * t);
+        const QPointF velocity(line.x(), line.y() - liftSlope);
+        if (std::hypot(velocity.x(), velocity.y()) > 1e-6) {
+            it->item->setRotation(std::atan2(velocity.y(), velocity.x()) * 180.0 / 3.14159265358979323846);
         }
         it->item->setPos(pos);
 
