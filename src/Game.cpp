@@ -10,18 +10,20 @@ namespace {
 // Alle coordinaten staan in sceneruimte (1024x576): de kaartafbeelding wordt op diezelfde grootte getekend.
 
 // Level 1: vijanden komen vanaf de linkerrand en lopen naar het blauwe kasteel rechts (jouw basis).
+// Level 1: vijanden komen vanaf de linkerrand en lopen over het kronkelpad naar de rechterrand.
 Game makeLevelOne()
 {
     std::vector<Vec2> route = {
-        {0, 236},   {36, 245},  {135, 230}, {177, 231}, {262, 262}, {317, 267}, {426, 232},
-        {473, 231}, {538, 250}, {641, 304}, {695, 315}, {739, 317}, {845, 292}, {969, 298},
-        {985, 293}
+        {0, 239},   {101, 241}, {225, 252}, {266, 243}, {359, 210}, {401, 205}, {438, 207},
+        {476, 217}, {500, 236}, {513, 264}, {518, 309}, {526, 332}, {542, 351}, {570, 363},
+        {628, 370}, {695, 357}, {730, 337}, {778, 283}, {799, 274}, {824, 271}, {855, 276},
+        {882, 290}, {900, 311}, {925, 353}, {944, 369}, {966, 377}, {1024, 380}
     };
     // Eén bouwplek per bordje op de kaart (midden van de zandcirkel).
     std::vector<Vec2> slots = {
-        {177, 307}, {291, 189}, {449, 302}, {573, 202}, {610, 370}, {771, 242}, {851, 371}
+        {275, 165}, {356, 295}, {497, 415}, {514, 159}, {716, 205}, {827, 358}, {895, 446}
     };
-    return Game(Path(std::move(route)), Player(220, 20), WaveManager(buildWaves(10), 3.0, kWaveDelay), std::move(slots));
+    return Game(Path(std::move(route)), Player(1000, 20), WaveManager(buildWaves(10), 3.0, kWaveDelay), std::move(slots));
 }
 
 // Level 3: van het kasteel linksboven over de brug naar de uitgang rechtsonder.

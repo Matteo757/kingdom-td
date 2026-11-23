@@ -20,7 +20,7 @@ namespace ktd {
 namespace {
 
 constexpr double kSlotRadius = 22.0;
-constexpr double kSpriteWidth = 100.0;  // standaardbreedte van een toren in sceneruimte (groter = toren groter)
+constexpr double kSpriteWidth = 90.0;  // standaardbreedte van een toren in sceneruimte (groter = toren groter)
 constexpr double kSpriteDrop = 18.0;    // hoeveel px de onderkant van de toren onder het midden van de bouwplek ligt (groter = lager)
 constexpr int kSpriteSupersample = 2;   // sprite wordt 2x zo groot voorgeschaald voor een scherper beeld
 
