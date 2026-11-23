@@ -10,6 +10,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets Test)
 
 add_library(ktd_core STATIC
     src/Path.cpp
+    src/RouteBounds.cpp
     src/Enemy.cpp
     src/Tower.cpp
     src/Projectile.cpp

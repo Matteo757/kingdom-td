@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <memory>
 #include <vector>
+#include "ktd/RouteBounds.h"
 #include "ktd/Soldier.h"
 #include "ktd/Tower.h"
 
@@ -31,6 +32,7 @@ private:
 
     double m_rally;
     Vec2 m_rallyPoint;
+    RouteBounds m_bounds;   // de onzichtbare muren: soldaten blijven binnen de weg
     std::vector<Soldier> m_soldiers;
 };
 

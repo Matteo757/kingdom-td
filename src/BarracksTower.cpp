@@ -9,6 +9,7 @@ BarracksTower::BarracksTower(const Vec2& position, const Path& path)
     : Tower(position, 100.0, 10.0, DamageType::Physical, 1.0)
     , m_rally(path.closestDistance(position))
     , m_rallyPoint(path.pointAt(m_rally))
+    , m_bounds(path)
 {
     for (std::size_t i = 0; i < kSoldierCount; ++i) {
         m_soldiers.emplace_back(40.0, damage(), 1.0, 8.0);
@@ -87,7 +88,8 @@ std::vector<Vec2> BarracksTower::unitPositions() const
     std::vector<Vec2> positions;
     for (std::size_t i = 0; i < m_soldiers.size(); ++i) {
         if (m_soldiers[i].alive()) {
-            positions.push_back({m_rallyPoint.x + (static_cast<double>(i) - 1.0) * 16.0, m_rallyPoint.y + 16.0});
+            const Vec2 wanted{m_rallyPoint.x + (static_cast<double>(i) - 1.0) * 16.0, m_rallyPoint.y + 16.0};
+            positions.push_back(m_bounds.clamp(wanted));   // nooit buiten de weg
         }
     }
     return positions;

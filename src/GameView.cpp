@@ -194,12 +194,13 @@ void GameView::mousePressEvent(QMouseEvent* event)
 
 void GameView::keyPressEvent(QKeyEvent* event)
 {
-    // P toont of verbergt de route (handig om de waypoints met de kaart te vergelijken).
     if (event->key() == Qt::Key_P && m_pathItem != nullptr) {
         m_pathItem->setVisible(!m_pathItem->isVisible());
+        if (m_boundsItem != nullptr) {
+            m_boundsItem->setVisible(m_pathItem->isVisible());   // de muren tonen we samen met de route
+        }
         return;
     }
-    QGraphicsView::keyPressEvent(event);
 }
 
 void GameView::drawMap(int level)
@@ -226,6 +227,11 @@ void GameView::drawPath()
     m_pathItem = m_scene->addPath(line, QPen(QColor(255, 0, 255, 180), 4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     m_pathItem->setZValue(-2);
     m_pathItem->setVisible(false);
+    // De onzichtbare muren zijn alleen logica (RouteBounds). Dit item tekent ze enkel voor controle:
+    // een brede streep met dezelfde breedte als de begaanbare weg, standaard verborgen.
+    m_boundsItem = m_scene->addPath(line, QPen(QColor(0, 200, 255, 70), 2 * kRoadHalfWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    m_boundsItem->setZValue(-3);
+    m_boundsItem->setVisible(false);
 }
 
 void GameView::drawSlots()

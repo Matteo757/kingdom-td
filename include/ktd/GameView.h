@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <vector>
 #include "ktd/Game.h"
+#include "ktd/RouteBounds.h"
 
 namespace ktd {
 
@@ -85,6 +86,7 @@ private:
     Game m_game;
     QGraphicsScene* m_scene;
     QGraphicsPathItem* m_pathItem = nullptr;
+    QGraphicsPathItem* m_boundsItem = nullptr;   // onzichtbare muren langs de weg, alleen zichtbaar met P
     std::unordered_map<const Enemy*, QGraphicsEllipseItem*> m_items;
     std::vector<SlotView> m_slotViews;
     std::vector<QGraphicsEllipseItem*> m_unitItems;
