@@ -21,6 +21,10 @@ MainWindow::MainWindow(QWidget* parent)
 
     connect(view, &GameView::goldChanged, hud, &Hud::setGold);
     connect(view, &GameView::livesChanged, hud, &Hud::setLives);
+    connect(view, &GameView::waveChanged, hud, &Hud::setWave);
+    hud->setGold(view->player().gold());
+    hud->setLives(view->player().lives());
+    hud->setWave(0, view->totalWaves());
     hud->setGold(view->player().gold());
     hud->setLives(view->player().lives());
 

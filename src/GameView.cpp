@@ -113,6 +113,11 @@ GameView::GameView(int level, QWidget* parent)
     m_clock.start();
 }
 
+int GameView::totalWaves() const
+{
+    return static_cast<int>(m_game.waves().waveCount());
+}
+
 const Player& GameView::player() const
 {
     return m_game.player();
@@ -388,6 +393,12 @@ void GameView::tick()
         m_items.at(enemy.get())->setPos(p.x, p.y);
     }
     updateUnits();
+
+    const std::size_t wave = m_game.waves().currentWave();
+    if (wave != m_shownWave) {
+        m_shownWave = wave;
+        emit waveChanged(static_cast<int>(wave), totalWaves());
+    }
 
     if (m_game.isGameOver()) {
         m_timer.stop();

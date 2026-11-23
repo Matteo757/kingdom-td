@@ -1,32 +1,11 @@
 #include "ktd/Game.h"
+#include "ktd/WaveFactory.h"
 
 #include <stdexcept>
 #include <utility>
 
 namespace ktd {
 namespace {
-
-Wave makeWave(int skeletons, int goblins, int orcs, int darkMages)
-{
-    Wave wave;
-    wave.spawnInterval = 1.2;
-    while (skeletons > 0 || goblins > 0 || orcs > 0 || darkMages > 0) {
-        if (skeletons-- > 0) wave.enemies.push_back(EnemyType::Skeleton);
-        if (goblins-- > 0) wave.enemies.push_back(EnemyType::Goblin);
-        if (orcs-- > 0) wave.enemies.push_back(EnemyType::Orc);
-        if (darkMages-- > 0) wave.enemies.push_back(EnemyType::DarkMage);
-    }
-    return wave;
-}
-
-std::vector<Wave> tenWaves()
-{
-    std::vector<Wave> waves;
-    for (int n = 1; n <= 10; ++n) {
-        waves.push_back(makeWave(2 + n, n, n / 2, n / 3));
-    }
-    return waves;
-}
 
 // Alle coordinaten staan in sceneruimte (1024x576): de kaartafbeelding wordt op diezelfde grootte getekend.
 
@@ -42,7 +21,7 @@ Game makeLevelOne()
     std::vector<Vec2> slots = {
         {177, 307}, {291, 189}, {449, 302}, {573, 202}, {610, 370}, {771, 242}, {851, 371}
     };
-    return Game(Path(std::move(route)), Player(220, 20), WaveManager(tenWaves(), 3.0, 8.0), std::move(slots));
+    return Game(Path(std::move(route)), Player(220, 20), WaveManager(buildWaves(10), 3.0, kWaveDelay), std::move(slots));
 }
 
 // Level 3: van het kasteel linksboven over de brug naar de uitgang rechtsonder.
@@ -58,7 +37,7 @@ Game makeLevelThree()
         {173, 283}, {267, 154}, {360, 287}, {414, 426}, {506, 397}, {543, 168},
         {645, 500}, {672, 300}, {731, 167}, {764, 393}, {877, 268}
     };
-    return Game(Path(std::move(route)), Player(220, 20), WaveManager(tenWaves(), 3.0, 8.0), std::move(slots));
+    return Game(Path(std::move(route)), Player(220, 20), WaveManager(buildWaves(10), 3.0, kWaveDelay), std::move(slots));
 }
 
 }

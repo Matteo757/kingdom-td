@@ -14,9 +14,11 @@ public:
 public slots:
     void setGold(int gold);
     void setLives(int lives);
+    void setWave(int current, int total);
 
 private:
     QLabel* m_gold;
+    QLabel* m_wave;
     QLabel* m_lives;
 };
 

@@ -20,6 +20,7 @@ add_library(ktd_core STATIC
     src/EnemyFactory.cpp
     src/WaveManager.cpp
     src/Game.cpp
+    src/WaveFactory.cpp
 )
 target_include_directories(ktd_core PUBLIC include)
 

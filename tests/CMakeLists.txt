@@ -33,3 +33,7 @@ add_test(NAME test_spell COMMAND test_spell)
 add_executable(test_level test_level.cpp)
 target_link_libraries(test_level PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_level COMMAND test_level)
+
+add_executable(test_progression test_progression.cpp)
+target_link_libraries(test_progression PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_progression COMMAND test_progression)

@@ -26,10 +26,12 @@ public:
     explicit GameView(int level, QWidget* parent = nullptr);
 
     const Player& player() const;
+    int totalWaves() const;                       // <-- 1. nieuw
 
 signals:
     void goldChanged(int gold);
     void livesChanged(int lives);
+    void waveChanged(int current, int total);     // <-- 2. nieuw
     void enemyReachedEnd();
     void gameOver();
     void gameWon();
@@ -74,6 +76,7 @@ private:
     std::vector<QGraphicsEllipseItem*> m_unitItems;
     QTimer m_timer;
     QElapsedTimer m_clock;
+    std::size_t m_shownWave = 0;
 };
 
 }
