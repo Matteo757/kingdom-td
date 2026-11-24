@@ -68,6 +68,25 @@ void Soldier::upgrade()
     }
 }
 
+void Soldier::place(double distance)
+{
+    m_distance = std::max(0.0, distance);
+}
+
+void Soldier::walkTo(double targetDistance, double dt)
+{
+    if (!alive() || dt <= 0.0) {
+        return;
+    }
+    const double maxStep = kSpeed * dt;
+    m_distance += std::clamp(targetDistance - m_distance, -maxStep, maxStep);
+}
+
+double Soldier::distance() const
+{
+    return m_distance;
+}
+
 bool Soldier::alive() const
 {
     return m_health > 0.0;

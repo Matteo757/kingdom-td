@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 #include "ktd/Damage.h"
 #include "ktd/Enemy.h"
@@ -13,6 +14,7 @@
 #include "ktd/Path.h"
 #include "ktd/Player.h"
 #include "ktd/Projectile.h"
+#include "ktd/RouteBounds.h"
 #include "ktd/Prices.h"
 #include "ktd/Tower.h"
 #include "ktd/TowerFactory.h"
@@ -22,6 +24,14 @@
 #include "ktd/LevelData.h"
 
 namespace ktd {
+
+// Afmetingen van de kaart in sceneruimte (de kaartafbeelding wordt op deze grootte getekend).
+constexpr double kMapWidth = 1024.0;
+constexpr double kMapHeight = 576.0;
+// Een vlag staat minstens zo ver (px) van het midden van een bouwplek: de bouwplaats zelf is geen weg.
+constexpr double kPadClearance = 30.0;
+// Een vlag staat minstens zo ver (px) van de rand van de kaart, zodat hij altijd helemaal zichtbaar is.
+constexpr double kMapMargin = 6.0;
 
 struct SpawnEvent {
     const Enemy* enemy;
@@ -65,7 +75,17 @@ public:
     int startNextWave();
     FrameEvents update(double dt);
 
+    // --- Vlag van een Barracks ---
+    // Een vlag mag alleen op de begaanbare weg (RouteBounds), binnen de kaart en niet op een bouwplek.
+    bool canPlaceFlag(const Vec2& point) const;
+    // Zet (of verplaatst) de vlag van de Barracks op deze bouwplek. False als er geen Barracks staat of als de
+    // plek niet geldig is; de oude vlag blijft dan staan.
+    bool placeFlag(std::size_t slot, const Vec2& point);
+    // De vlag van de Barracks op deze bouwplek, of niets als daar geen Barracks staat.
+    std::optional<Vec2> flagPosition(std::size_t slot) const;
+
     const Path& path() const;
+    const RouteBounds& routeBounds() const;
     const Player& player() const;
     const WaveManager& waves() const;
     const std::vector<std::unique_ptr<Tower>>& towers() const;
@@ -81,6 +101,7 @@ private:
     void removeFinishedEnemies(FrameEvents& events);
 
     Path m_path;
+    RouteBounds m_bounds;   // moet na m_path komen: wordt daaruit opgebouwd
     Player m_player;
     WaveManager m_waves;
     std::vector<BuildSlot> m_slots;

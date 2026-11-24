@@ -1,9 +1,11 @@
 #include "ktd/GameView.h"
 
 #include <QAction>
+#include <QCursor>
 #include <QDebug>
 #include <utility>
 #include <QFont>
+#include <QGraphicsLineItem>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsTextItem>
 #include <QMenu>
@@ -13,6 +15,7 @@
 #include <QPixmap>
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <unordered_set>
 #include "ktd/Prices.h"
 #include "ktd/SlotMenu.h"
@@ -29,6 +32,12 @@ constexpr double kWaveButtonWidth = 132.0;
 constexpr double kWaveButtonHeight = 50.0;
 constexpr double kWaveButtonPathOffset = 70.0;   // px langs het pad vanaf het begin
 constexpr double kWaveButtonLift = 55.0;         // px boven het pad, zodat de eerste vijanden zichtbaar blijven
+constexpr double kFlagPoleHeight = 30.0;      // hoogte van de vlagpaal in sceneruimte
+constexpr double kFlagBannerWidth = 20.0;
+constexpr double kFlagGrabWidth = 22.0;       // zo dicht bij een vlag klikken pakt hem op om te verplaatsen
+const QColor kPlacedFlagColor(40, 110, 235);  // blauw: de kleur van jouw kant (het blauwe kasteel)
+const QColor kValidFlagColor(60, 200, 80);    // groen: hier mag de vlag staan
+const QColor kInvalidFlagColor(230, 40, 40);  // rood: hier niet
 constexpr int kSpriteSupersample = 2;   // sprite wordt 2x zo groot voorgeschaald voor een scherper beeld
 
 QColor colorFor(EnemyType type)
@@ -135,6 +144,9 @@ GameView::GameView(Game game, int level, QWidget* parent)
     drawSlots();
     loadProjectileSprites();
     createWaveButton();
+    createFlagGhost();
+    setMouseTracking(true);              // de vlag moet meebewegen zonder dat er een knop ingedrukt is
+    viewport()->setMouseTracking(true);
 
     connect(&m_timer, &QTimer::timeout, this, &GameView::tick);
     connect(this, &GameView::goldChanged, this, &GameView::refreshOpenMenu);
@@ -167,6 +179,16 @@ void GameView::mousePressEvent(QMouseEvent* event)
 
     const QPointF scenePos = mapToScene(event->position().toPoint());
 
+    // Tijdens het plaatsen van een vlag: links plaatst, rechts annuleert, al het andere wordt genegeerd.
+    if (m_flagSlot.has_value()) {
+        if (event->button() == Qt::LeftButton) {
+            placeFlagAt(scenePos);
+        } else if (event->button() == Qt::RightButton) {
+            endFlagPlacement();
+        }
+        return;
+    }
+
     if (event->button() == Qt::RightButton) {
         if (m_game.castFireball({scenePos.x(), scenePos.y()})) {
             showFireball(scenePos);
@@ -180,6 +202,19 @@ void GameView::mousePressEvent(QMouseEvent* event)
             startNextWave();
             return;
         }
+        // Op een bestaande vlag klikken pakt hem op, zodat hij verplaatst kan worden.
+        for (std::size_t i = 0; i < m_slotViews.size(); ++i) {
+            const FlagView& flag = m_slotViews[i].flag;
+            if (flag.root == nullptr) {
+                continue;
+            }
+            const QPointF base = flag.root->pos();
+            if (std::abs(scenePos.x() - base.x()) <= kFlagGrabWidth
+                && scenePos.y() >= base.y() - kFlagPoleHeight - 6.0 && scenePos.y() <= base.y() + 10.0) {
+                beginFlagPlacement(i);
+                return;
+            }
+        }
         const std::vector<BuildSlot>& allSlots = m_game.buildSlots();
         for (std::size_t i = 0; i < allSlots.size(); ++i) {
             const Vec2& p = allSlots[i].position;
@@ -192,8 +227,20 @@ void GameView::mousePressEvent(QMouseEvent* event)
     QGraphicsView::mousePressEvent(event);
 }
 
+void GameView::mouseMoveEvent(QMouseEvent* event)
+{
+    if (m_flagSlot.has_value()) {
+        updateFlagGhost(mapToScene(event->position().toPoint()));
+    }
+    QGraphicsView::mouseMoveEvent(event);
+}
+
 void GameView::keyPressEvent(QKeyEvent* event)
 {
+    if (event->key() == Qt::Key_Escape && m_flagSlot.has_value()) {
+        endFlagPlacement();   // Esc annuleert het plaatsen van de vlag
+        return;
+    }
     if (event->key() == Qt::Key_P && m_pathItem != nullptr) {
         m_pathItem->setVisible(!m_pathItem->isVisible());
         if (m_boundsItem != nullptr) {
@@ -232,6 +279,10 @@ void GameView::drawPath()
     m_boundsItem = m_scene->addPath(line, QPen(QColor(0, 200, 255, 70), 2 * kRoadHalfWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     m_boundsItem->setZValue(-3);
     m_boundsItem->setVisible(false);
+    // Tijdens het plaatsen van een vlag tonen we de weg waarop hij mag staan (dezelfde breedte als de muren).
+    m_roadHighlight = m_scene->addPath(line, QPen(QColor(60, 220, 90, 80), 2 * kRoadHalfWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    m_roadHighlight->setZValue(-2.5);
+    m_roadHighlight->setVisible(false);
 }
 
 void GameView::drawSlots()
@@ -267,6 +318,9 @@ void GameView::showTower(std::size_t index)
     view.label->setZValue(3);
     refreshSprite(index);
     refreshLabel(index);
+    if (tower.type() == TowerType::Barracks) {
+        showFlag(index);
+    }
 }
 
 void GameView::refreshSprite(std::size_t index)
@@ -315,6 +369,13 @@ void GameView::openMenu(std::size_t index, const QPoint& globalPos)
         } else if (entry.action == MenuAction::Upgrade) {
             connect(action, &QAction::triggered, this, [this, index]() { upgrade(index); });
         }
+    }
+    // De vlag van een Barracks verplaats je ook hier: het menu kiest alleen, de vlag zelf volgt daarna de muis.
+    const Tower* tower = m_game.buildSlots()[index].tower;
+    if (tower != nullptr && tower->type() == TowerType::Barracks) {
+        menu.addSeparator();
+        QAction* flagAction = menu.addAction("Vlag plaatsen / verplaatsen");
+        connect(flagAction, &QAction::triggered, this, [this, index]() { beginFlagPlacement(index); });
     }
     menu.exec(globalPos);
 
@@ -573,6 +634,133 @@ void GameView::showEndText(const QString& text)
     item->setZValue(20);
 }
 
+GameView::FlagView GameView::makeFlagView(const QColor& color)
+{
+    FlagView view;
+
+    // De voet van de vlag ligt op (0, 0): de paal gaat omhoog en de wimpel wappert naar rechts.
+    QPainterPath banner;
+    banner.moveTo(0, -kFlagPoleHeight);
+    banner.lineTo(kFlagBannerWidth, -kFlagPoleHeight + 7);
+    banner.lineTo(0, -kFlagPoleHeight + 14);
+    banner.closeSubpath();
+
+    view.root = new QGraphicsPathItem(banner);
+    view.root->setPen(QPen(Qt::white, 2));
+    view.root->setZValue(7);
+
+    auto* pole = new QGraphicsLineItem(0, 0, 0, -kFlagPoleHeight, view.root);
+    pole->setPen(QPen(QColor(70, 45, 20), 3));
+
+    // Een ring op de grond: de plek waar de soldaten verzamelen, ook goed te zien als de wimpel klein is.
+    view.ring = new QGraphicsEllipseItem(-15, -7, 30, 14, view.root);
+    view.ring->setZValue(-1);
+
+    // Een rood kruis, alleen zichtbaar bij een ongeldige plek (zie updateFlagGhost).
+    QPainterPath cross;
+    cross.moveTo(-9, -16);
+    cross.lineTo(9, 2);
+    cross.moveTo(9, -16);
+    cross.lineTo(-9, 2);
+    view.cross = new QGraphicsPathItem(cross, view.root);
+    view.cross->setPen(QPen(QColor(220, 30, 30), 4, Qt::SolidLine, Qt::RoundCap));
+    view.cross->setVisible(false);
+
+    setFlagColor(view, color);
+    m_scene->addItem(view.root);
+    return view;
+}
+
+void GameView::setFlagColor(const FlagView& view, const QColor& color)
+{
+    view.root->setBrush(color);
+    view.ring->setBrush(QColor(color.red(), color.green(), color.blue(), 90));
+    view.ring->setPen(QPen(color.lighter(130), 2));
+}
+
+void GameView::createFlagGhost()
+{
+    m_ghostFlag = makeFlagView(kValidFlagColor);
+    m_ghostFlag.root->setZValue(12);
+    m_ghostFlag.root->setOpacity(0.85);
+    m_ghostFlag.root->setVisible(false);
+
+    // De uitleg bij een ongeldige plek staat op een donkere achtergrond, zodat hij op elke kaart leesbaar blijft.
+    m_flagHint = m_scene->addRect(0, 0, 10, 10, QPen(Qt::NoPen), QBrush(QColor(0, 0, 0, 190)));
+    m_flagHint->setZValue(13);
+    m_flagHintText = new QGraphicsSimpleTextItem("Alleen op de weg!", m_flagHint);
+    m_flagHintText->setFont(QFont("Arial", 10, QFont::Bold));
+    m_flagHintText->setBrush(QColor(255, 120, 120));
+    const QRectF text = m_flagHintText->boundingRect();
+    m_flagHintText->setPos(5, 3);
+    m_flagHint->setRect(0, 0, text.width() + 10, text.height() + 6);
+    m_flagHint->setVisible(false);
+}
+
+void GameView::showFlag(std::size_t index)
+{
+    const std::optional<Vec2> position = m_game.flagPosition(index);
+    if (!position.has_value()) {
+        return;
+    }
+    m_slotViews[index].flag = makeFlagView(kPlacedFlagColor);
+    m_slotViews[index].flag.root->setPos(position->x, position->y);
+}
+
+void GameView::beginFlagPlacement(std::size_t slot)
+{
+    m_flagSlot = slot;
+    m_roadHighlight->setVisible(true);
+    m_ghostFlag.root->setVisible(true);
+    updateFlagGhost(mapToScene(mapFromGlobal(QCursor::pos())));
+}
+
+void GameView::endFlagPlacement()
+{
+    if (!m_flagSlot.has_value()) {
+        return;
+    }
+    m_flagSlot.reset();
+    m_roadHighlight->setVisible(false);
+    m_ghostFlag.root->setVisible(false);
+    m_flagHint->setVisible(false);
+    viewport()->unsetCursor();
+}
+
+void GameView::updateFlagGhost(const QPointF& scenePos)
+{
+    // Game beslist of de plek geldig is (weg, binnen de kaart, niet op een bouwplek); de view toont alleen het antwoord.
+    const bool valid = m_game.canPlaceFlag({scenePos.x(), scenePos.y()});
+    m_ghostFlag.root->setPos(scenePos);
+    setFlagColor(m_ghostFlag, valid ? kValidFlagColor : kInvalidFlagColor);
+    m_ghostFlag.cross->setVisible(!valid);
+    m_flagHint->setVisible(!valid);
+    m_flagHint->setPos(scenePos.x() + 16.0, scenePos.y() - kFlagPoleHeight - 18.0);
+    viewport()->setCursor(valid ? Qt::CrossCursor : Qt::ForbiddenCursor);
+}
+
+void GameView::placeFlagAt(const QPointF& scenePos)
+{
+    if (!m_flagSlot.has_value()) {
+        return;
+    }
+    const std::size_t slot = *m_flagSlot;
+    if (!m_game.placeFlag(slot, {scenePos.x(), scenePos.y()})) {
+        flashInvalidFlag(scenePos);   // niet geldig: er verandert niets en de speler kan het opnieuw proberen
+        return;
+    }
+    m_slotViews[slot].flag.root->setPos(scenePos);
+    endFlagPlacement();
+}
+
+void GameView::flashInvalidFlag(const QPointF& scenePos)
+{
+    QGraphicsEllipseItem* flash = m_scene->addEllipse(scenePos.x() - 18, scenePos.y() - 18, 36, 36,
+                                                      QPen(QColor(230, 40, 40), 3), QBrush(QColor(230, 40, 40, 90)));
+    flash->setZValue(14);
+    QTimer::singleShot(250, this, [flash]() { delete flash; });
+}
+
 void GameView::tick()
 {
     const double dt = std::min(m_clock.restart() / 1000.0, 0.1);
@@ -595,6 +783,7 @@ void GameView::tick()
 
     if (m_game.isGameOver()) {
         m_timer.stop();
+        endFlagPlacement();
         if (!m_openMenu.isNull()) {
             m_openMenu->close();   // na het einde van het spel mag er niet meer gebouwd worden
         }
@@ -602,6 +791,7 @@ void GameView::tick()
         emit gameOver();
     } else if (m_game.isWon()) {
         m_timer.stop();
+        endFlagPlacement();
         if (!m_openMenu.isNull()) {
             m_openMenu->close();
         }

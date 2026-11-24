@@ -21,9 +21,11 @@ Gemaakt door Matteo Belmans (Matteo757) als eindopdracht C++.
 |---|---|
 | Toren bouwen of upgraden | Linkermuisknop op een bouwplek (het bordje) opent het menu |
 | Vuurbal gooien | Rechtermuisknop op het pad (heeft een cooldown) |
+| Vlag van een barracks plaatsen of verplaatsen | Kies "Vlag plaatsen / verplaatsen" in het menu van de barracks, of klik op de vlag zelf. Links klikken plaatst de vlag, rechtermuisknop of `Esc` annuleert |
 | Route tonen of verbergen | Toets `P` (handig om de waypoints te controleren) |
 
 - **Torens:** boogschutter (fysieke schade), mage (magische schade), kanon, artillerie en barracks (soldaten die vijanden tegenhouden). Elke toren kan tot level 3 geüpgraded worden.
+- **De vlag van een barracks:** de soldaten lopen langs de weg naar hun vlag en houden vijanden bij de vlag tegen. Tijdens het plaatsen volgt een vlag de muis: groen betekent dat het mag, rood met een kruis en "Alleen op de weg!" betekent dat het niet mag. Een vlag kan alleen op de weg staan, binnen de kaart en niet op een bouwplek. Verplaats je de vlag, dan laten vechtende soldaten hun vijand los en lopen ze naar de nieuwe plek.
 - **Vijanden:** goblin, skeleton, orc en dark mage. Ze hebben verschillende health, snelheid, armor en magic resist. Schade wordt dus per type anders verminderd.
 - **Doel:** overleef alle waves. Elke vijand die het kasteel bereikt kost een leven. Bij 0 levens is het game over.
 - **Levels:** level 1 en level 3 zitten erin. Het spel start in level 1.
@@ -117,12 +119,16 @@ classDiagram
         -Path m_path
         -Player m_player
         -WaveManager m_waves
+        -RouteBounds m_bounds
         -vector~BuildSlot~ m_slots
         +level(int) Game
         +fromLevel(LevelData) Game
         +buildTower(slot, TowerType) bool
         +upgradeTower(slot) bool
         +castFireball(Vec2) bool
+        +canPlaceFlag(Vec2) bool
+        +placeFlag(slot, Vec2) bool
+        +flagPosition(slot) optional~Vec2~
         +update(double dt) FrameEvents
         +isGameOver() bool
         +isWon() bool
@@ -190,13 +196,19 @@ classDiagram
     class CannonTower
     class ArtilleryTower
     class BarracksTower {
+        -RouteBounds m_bounds
+        -double m_flagDistance
         -vector~Soldier~ m_soldiers
+        +setFlag(Vec2) bool
+        +flag() Vec2
         +soldiers() vector~Soldier~
     }
     class Soldier {
         -double m_health
+        -double m_distance
         -Enemy* m_target
         +engage(Enemy*)
+        +walkTo(double distance, double dt)
         +takeDamage(double)
         +alive() bool
     }

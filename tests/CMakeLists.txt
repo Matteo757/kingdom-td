@@ -61,3 +61,7 @@ add_test(NAME test_slotmenu COMMAND test_slotmenu)
 add_executable(test_routebounds test_routebounds.cpp)
 target_link_libraries(test_routebounds PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_routebounds COMMAND test_routebounds)
+
+add_executable(test_flag test_flag.cpp)
+target_link_libraries(test_flag PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_flag COMMAND test_flag)

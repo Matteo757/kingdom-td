@@ -27,12 +27,26 @@ public:
 
     const std::vector<Soldier>& soldiers() const;
 
+    // --- De vlag (rally point) ---
+    // De soldaten lopen naar de vlag en bewaken het stuk weg eromheen. Een nieuwe barracks heeft zijn vlag op het
+    // punt van de weg dat het dichtst bij de toren ligt.
+    // setFlag() weigert (false) alles wat niet binnen de begaanbare weg (RouteBounds) ligt. Waar de vlag verder
+    // niet mag staan (buiten de kaart, op een bouwplek) beslist Game::canPlaceFlag().
+    bool setFlag(const Vec2& point);
+    const Vec2& flag() const;
+    double flagDistance() const;   // positie van de vlag langs de route
+
 private:
     bool hasFreeSoldier() const;
+    double formationOffset(std::size_t index) const;     // afstand langs de weg ten opzichte van de vlag
+    Vec2 positionOf(const Soldier& soldier, std::size_t index) const;
 
-    double m_rally;
-    Vec2 m_rallyPoint;
+    Path m_path;
     RouteBounds m_bounds;   // de onzichtbare muren: soldaten blijven binnen de weg
+    double m_homeDistance;  // het punt van de weg bij de barracks zelf (hier verschijnt een nieuwe soldaat)
+    double m_flagDistance;
+    Vec2 m_flagPoint;
+    bool m_releaseFighters = false;   // na een verplaatste vlag laten vechtende soldaten hun vijand los
     std::vector<Soldier> m_soldiers;
 };
 

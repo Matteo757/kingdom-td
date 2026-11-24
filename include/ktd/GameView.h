@@ -3,6 +3,7 @@
 
 #include <QElapsedTimer>
 #include <QGraphicsEllipseItem>
+#include <QGraphicsLineItem>
 #include <QGraphicsPathItem>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsRectItem>
@@ -19,6 +20,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <QPixmap>
 #include <QPointF>
 #include <unordered_map>
@@ -48,6 +50,7 @@ signals:
 protected:
     void resizeEvent(QResizeEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
 
 private slots:
@@ -55,7 +58,16 @@ private slots:
     void refreshOpenMenu();   // werkt een geopend bouw- of upgrademenu bij zodra het goud verandert
 
 private:
+    // Een vlag op de kaart: de wimpel met paal (root), de ring op de grond waar de soldaten verzamelen, en een
+    // rood kruis dat alleen bij een ongeldige plek getoond wordt.
+    struct FlagView {
+        QGraphicsPathItem* root = nullptr;
+        QGraphicsEllipseItem* ring = nullptr;
+        QGraphicsPathItem* cross = nullptr;
+    };
+
     struct SlotView {
+        FlagView flag;   // alleen bij een Barracks
         QGraphicsEllipseItem* marker = nullptr;
         QGraphicsEllipseItem* range = nullptr;
         QGraphicsPixmapItem* body = nullptr;
@@ -83,9 +95,21 @@ private:
     void startNextWave();
     void showBonusText(int bonus);
 
+    // --- Vlag van een Barracks ---
+    FlagView makeFlagView(const QColor& color);
+    void setFlagColor(const FlagView& view, const QColor& color);
+    void createFlagGhost();
+    void showFlag(std::size_t index);                    // de vlag van een net gebouwde Barracks
+    void beginFlagPlacement(std::size_t slot);           // de vlag volgt nu de muis tot er geklikt wordt
+    void endFlagPlacement();
+    void updateFlagGhost(const QPointF& scenePos);       // groen en geldig, of rood met kruis en uitleg
+    void placeFlagAt(const QPointF& scenePos);
+    void flashInvalidFlag(const QPointF& scenePos);
+
     Game m_game;
     QGraphicsScene* m_scene;
     QGraphicsPathItem* m_pathItem = nullptr;
+    QGraphicsPathItem* m_roadHighlight = nullptr;   // toont de weg waarop een vlag mag staan, alleen tijdens het plaatsen
     QGraphicsPathItem* m_boundsItem = nullptr;   // onzichtbare muren langs de weg, alleen zichtbaar met P
     std::unordered_map<const Enemy*, QGraphicsEllipseItem*> m_items;
     std::vector<SlotView> m_slotViews;
@@ -105,6 +129,12 @@ private:
     QPointer<QMenu> m_openMenu;
     std::size_t m_openMenuSlot = 0;
     std::vector<QAction*> m_openMenuActions;
+
+    // Plaatsen van een vlag: de bouwplek van de Barracks waarvan de vlag nu verplaatst wordt (als dat gebeurt).
+    std::optional<std::size_t> m_flagSlot;
+    FlagView m_ghostFlag;                         // de vlag die met de muis meebeweegt
+    QGraphicsRectItem* m_flagHint = nullptr;      // "Alleen op de weg!" naast de muis bij een ongeldige plek
+    QGraphicsSimpleTextItem* m_flagHintText = nullptr;
 
     QTimer m_timer;
     QElapsedTimer m_clock;

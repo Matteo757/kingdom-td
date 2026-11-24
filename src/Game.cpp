@@ -1,6 +1,9 @@
 #include "ktd/Game.h"
+#include "ktd/BarracksTower.h"
 #include "ktd/WaveFactory.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
@@ -48,6 +51,7 @@ Game makeLevelThree()
 
 Game::Game(Path path, Player player, WaveManager waves, std::vector<Vec2> slotPositions)
     : m_path(std::move(path))
+    , m_bounds(m_path)
     , m_player(player)
     , m_waves(std::move(waves))
 {
@@ -219,7 +223,42 @@ void Game::removeFinishedEnemies(FrameEvents& events)
     }
 }
 
+bool Game::canPlaceFlag(const Vec2& point) const
+{
+    const bool onMap = point.x >= kMapMargin && point.x <= kMapWidth - kMapMargin
+                       && point.y >= kMapMargin && point.y <= kMapHeight - kMapMargin;
+    if (!onMap || !m_bounds.contains(point)) {
+        return false;   // buiten de kaart, of op gras / bos / water
+    }
+    // Een bouwplek is geen weg, ook niet als hij toevallig dicht bij de weg ligt.
+    return std::none_of(m_slots.begin(), m_slots.end(), [&point](const BuildSlot& slot) {
+        return std::hypot(slot.position.x - point.x, slot.position.y - point.y) < kPadClearance;
+    });
+}
+
+bool Game::placeFlag(std::size_t slot, const Vec2& point)
+{
+    if (slot >= m_slots.size() || !canPlaceFlag(point)) {
+        return false;
+    }
+    auto* barracks = dynamic_cast<BarracksTower*>(m_slots[slot].tower);
+    return barracks != nullptr && barracks->setFlag(point);
+}
+
+std::optional<Vec2> Game::flagPosition(std::size_t slot) const
+{
+    if (slot >= m_slots.size()) {
+        return std::nullopt;
+    }
+    const auto* barracks = dynamic_cast<const BarracksTower*>(m_slots[slot].tower);
+    if (barracks == nullptr) {
+        return std::nullopt;
+    }
+    return barracks->flag();
+}
+
 const Path& Game::path() const { return m_path; }
+const RouteBounds& Game::routeBounds() const { return m_bounds; }
 const Player& Game::player() const { return m_player; }
 const WaveManager& Game::waves() const { return m_waves; }
 const std::vector<std::unique_ptr<Tower>>& Game::towers() const { return m_towers; }
