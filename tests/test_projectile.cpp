@@ -4,6 +4,7 @@
 #include "ktd/ArcherTower.h"
 #include "ktd/ArtilleryTower.h"
 #include "ktd/Game.h"
+#include "ktd/LaunchPoints.h"
 #include "ktd/MageTower.h"
 #include "ktd/Path.h"
 #include "ktd/Projectile.h"
@@ -31,6 +32,65 @@ class TestProjectile : public QObject {
     Q_OBJECT
 
 private slots:
+    // ---- lanceerpunten: de pijlen beginnen bij de boogschutters ----
+
+    void archerArrowsStartAtTheArcherPositionsAndAlternate() {
+        Path path({{0, 0}, {2000, 0}});
+        std::vector<std::unique_ptr<Enemy>> enemies;
+        enemies.push_back(skeletonAfter(5));
+        ArcherTower tower({500, 300});
+        const std::span<const LaunchPoint> points = launchPoints(TowerType::Archer, 1);
+        QCOMPARE(points.size(), std::size_t(2));
+
+        for (int shot = 0; shot < 4; ++shot) {
+            const LaunchPoint& point = points[shot % 2];     // links, rechts, links, rechts
+            const Projectile arrow = *tower.attack(*enemies[0], path);
+            QCOMPARE(arrow.position().x, 500.0 + point.x);
+            QCOMPARE(arrow.position().y, 300.0 + point.y);
+        }
+    }
+
+    void archerArrowsDoNotStartInTheCenterOfTheTower() {
+        Path path({{0, 0}, {2000, 0}});
+        std::vector<std::unique_ptr<Enemy>> enemies;
+        enemies.push_back(skeletonAfter(5));
+        ArcherTower tower({500, 300});
+        const Projectile arrow = *tower.attack(*enemies[0], path);
+        QVERIFY(arrow.position().x != 500.0 || arrow.position().y != 300.0);
+    }
+
+    void upgradedArcherTowerUsesTheLaunchPointsOfItsNewLevel() {
+        Path path({{0, 0}, {2000, 0}});
+        std::vector<std::unique_ptr<Enemy>> enemies;
+        enemies.push_back(skeletonAfter(5));
+        ArcherTower tower({500, 300});
+        tower.upgrade();
+        QCOMPARE(int(tower.level()), 2);
+        const std::span<const LaunchPoint> points = launchPoints(TowerType::Archer, 2);
+        const Projectile arrow = *tower.attack(*enemies[0], path);
+        QCOMPARE(arrow.position().x, 500.0 + points[0].x);
+        QCOMPARE(arrow.position().y, 300.0 + points[0].y);
+    }
+
+    void everyArcherLevelHasTwoSideBySideShooters() {
+        for (std::uint8_t level = 1; level <= 3; ++level) {
+            const std::span<const LaunchPoint> points = launchPoints(TowerType::Archer, level);
+            QCOMPARE(points.size(), std::size_t(2));
+            QVERIFY(points[0].x < points[1].x);
+        }
+    }
+
+    void towersWithoutLaunchPointsStillShootFromTheirCenter() {
+        Path path({{0, 0}, {2000, 0}});
+        std::vector<std::unique_ptr<Enemy>> enemies;
+        enemies.push_back(skeletonAfter(5));
+        QVERIFY(launchPoints(TowerType::Mage, 1).empty());
+        MageTower tower({500, 300});
+        const Projectile bolt = *tower.attack(*enemies[0], path);
+        QCOMPARE(bolt.position().x, 500.0);
+        QCOMPARE(bolt.position().y, 300.0);
+    }
+
     void damageOnlyOnImpact() {
         Path path({{0, 0}, {1000, 0}});
         std::vector<std::unique_ptr<Enemy>> enemies;

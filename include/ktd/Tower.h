@@ -3,6 +3,7 @@
 #ifndef KTD_TOWER_H
 #define KTD_TOWER_H
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -45,7 +46,9 @@ public:
 
 protected:
     // Maakt de kogel van deze toren met zijn huidige schade en level; splashRadius > 0 geeft schade in een gebied.
-    Projectile makeProjectile(Enemy& target, const Path& path, double splashRadius = 0.0) const;
+    // De kogel begint op een lanceerpunt van de toren (zie LaunchPoints.h); heeft de toren meerdere punten,
+    // dan wisselen die elkaar bij elk schot af. Daarom is deze functie niet const.
+    Projectile makeProjectile(Enemy& target, const Path& path, double splashRadius = 0.0);
 
 private:
     Vec2 m_position;
@@ -53,6 +56,7 @@ private:
     double m_damage;
     DamageType m_type;
     std::uint8_t m_level = 1;
+    std::size_t m_nextShooter = 0;   // welk lanceerpunt het volgende schot krijgt
     Cooldown<double> m_cooldown;
 };
 

@@ -1,4 +1,5 @@
 #include "ktd/Tower.h"
+#include "ktd/LaunchPoints.h"
 
 #include <algorithm>
 #include <cmath>
@@ -58,9 +59,17 @@ std::optional<Projectile> Tower::update(double dt, const std::vector<std::unique
     return shot;
 }
 
-Projectile Tower::makeProjectile(Enemy& target, const Path& path, double splashRadius) const
+Projectile Tower::makeProjectile(Enemy& target, const Path& path, double splashRadius)
 {
-    return Projectile(type(), m_level, m_position, target, path, {m_damage, m_type}, splashRadius);
+    // Standaard (geen lanceerpunten) begint de kogel in het midden van de toren.
+    Vec2 origin = m_position;
+    const std::span<const LaunchPoint> points = launchPoints(type(), m_level);
+    if (!points.empty()) {
+        const LaunchPoint& point = points[m_nextShooter % points.size()];
+        ++m_nextShooter;
+        origin = {m_position.x + point.x, m_position.y + point.y};
+    }
+    return Projectile(type(), m_level, origin, target, path, {m_damage, m_type}, splashRadius);
 }
 
 std::vector<Vec2> Tower::unitPositions() const

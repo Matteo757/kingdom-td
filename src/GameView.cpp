@@ -17,6 +17,7 @@
 #include <cmath>
 #include <optional>
 #include <unordered_set>
+#include "ktd/LaunchPoints.h"
 #include "ktd/Prices.h"
 #include "ktd/SlotMenu.h"
 #include "ktd/TowerFactory.h"
@@ -39,6 +40,10 @@ const QColor kPlacedFlagColor(40, 110, 235);  // blauw: de kleur van jouw kant (
 const QColor kValidFlagColor(60, 200, 80);    // groen: hier mag de vlag staan
 const QColor kInvalidFlagColor(230, 40, 40);  // rood: hier niet
 constexpr int kSpriteSupersample = 2;   // sprite wordt 2x zo groot voorgeschaald voor een scherper beeld
+
+// ---- De twee groene boogschutters (stippen) op de Archer Tower ----
+// Waar de stippen staan (en dus waar de pijlen vandaan komen) staat in include/ktd/LaunchPoints.h.
+constexpr double kArcherDotRadius = 3.8;   // in sceneruimte
 
 QColor colorFor(EnemyType type)
 {
@@ -342,6 +347,31 @@ void GameView::refreshSprite(std::size_t index)
     body->setPixmap(sprite);
     body->setScale(1.0 / kSpriteSupersample);
     body->setOffset(-sprite.width() / 2.0, kSpriteDrop * kSpriteSupersample - sprite.height());
+
+    if (tower.type() == TowerType::Archer) {
+        updateArchers(index);
+    }
+}
+
+// Zet de twee stippen op de lanceerpunten van de toren (LaunchPoints.h), dus precies waar de pijlen beginnen.
+// Het zijn kinderen van het torenitem: ze verplaatsen en schalen met de toren mee en liggen er altijd bovenop.
+// Na een upgrade worden ze alleen verplaatst naar de punten van het nieuwe level, niet opnieuw gemaakt.
+void GameView::updateArchers(std::size_t index)
+{
+    SlotView& view = m_slotViews[index];
+    const std::span<const LaunchPoint> points = launchPoints(TowerType::Archer, m_game.buildSlots()[index].tower->level());
+
+    // Het torenitem is 1/kSpriteSupersample geschaald en staat op het midden van de bouwplek, dus een punt in
+    // scenepixels t.o.v. dat midden is hier kSpriteSupersample keer groter.
+    const double r = kArcherDotRadius * kSpriteSupersample;
+    for (std::size_t i = 0; i < points.size() && i < std::size(view.archers); ++i) {
+        if (view.archers[i] == nullptr) {
+            view.archers[i] = new QGraphicsEllipseItem(-r, -r, 2 * r, 2 * r, view.body);
+            view.archers[i]->setBrush(QColor(70, 210, 75));
+            view.archers[i]->setPen(QPen(QColor(15, 60, 20), kSpriteSupersample));
+        }
+        view.archers[i]->setPos(points[i].x * kSpriteSupersample, points[i].y * kSpriteSupersample);
+    }
 }
 
 void GameView::refreshLabel(std::size_t index)

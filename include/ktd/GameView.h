@@ -71,6 +71,7 @@ private:
         QGraphicsEllipseItem* marker = nullptr;
         QGraphicsEllipseItem* range = nullptr;
         QGraphicsPixmapItem* body = nullptr;
+        QGraphicsEllipseItem* archers[2] = {nullptr, nullptr};   // de twee groene boogschutters op een Archer Tower
         QGraphicsSimpleTextItem* label = nullptr;
     };
 
@@ -80,6 +81,7 @@ private:
     void showTower(std::size_t index);
     void refreshLabel(std::size_t index);
     void refreshSprite(std::size_t index);
+    void updateArchers(std::size_t index);
     void openMenu(std::size_t index, const QPoint& globalPos);
     void build(std::size_t index, TowerType type);
     void upgrade(std::size_t index);
