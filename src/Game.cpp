@@ -102,6 +102,7 @@ bool Game::buildTower(std::size_t slot, TowerType type)
         return false;
     }
     addTower(makeTower(type, m_slots[slot].position, m_path));
+    m_towers.back()->addInvestment(buildCost(type));   // canBuild() controleerde en spend() betaalde precies dit bedrag
     m_slots[slot].tower = m_towers.back().get();
     return true;
 }
@@ -121,10 +122,43 @@ bool Game::upgradeTower(std::size_t slot)
         return false;
     }
     Tower& tower = *m_slots[slot].tower;
-    if (!m_player.spend(upgradeCost(tower.level()))) {
+    const int cost = upgradeCost(tower.level());
+    if (!m_player.spend(cost)) {
         return false;
     }
+    tower.addInvestment(cost);   // het bedrag dat echt betaald is, voor de verkoopprijs
     tower.upgrade();
+    return true;
+}
+
+bool Game::canSell(std::size_t slot) const
+{
+    return !isGameOver() && slot < m_slots.size() && m_slots[slot].tower != nullptr;
+}
+
+int Game::sellValue(std::size_t slot) const
+{
+    if (slot >= m_slots.size() || m_slots[slot].tower == nullptr) {
+        return 0;
+    }
+    return sellRefund(m_slots[slot].tower->invested());
+}
+
+bool Game::sellTower(std::size_t slot)
+{
+    if (!canSell(slot)) {
+        return false;   // geen toren (ook na een eerdere verkoop) of het spel is voorbij: geen tweede uitbetaling
+    }
+    Tower* tower = m_slots[slot].tower;
+    const int refund = sellValue(slot);
+
+    tower->onSold(m_enemies);   // laat bijvoorbeeld de vijanden van een Barracks weer lopen
+    m_slots[slot].tower = nullptr;
+    // Kogels die al in de lucht zijn blijven vliegen: ze verwijzen naar hun doel en niet naar de toren, en de
+    // schade van een schot dat al gelost is hoort er gewoon bij.
+    std::erase_if(m_towers, [tower](const std::unique_ptr<Tower>& t) { return t.get() == tower; });
+
+    m_player.addGold(refund);   // het enige goudbeheer blijft Player
     return true;
 }
 

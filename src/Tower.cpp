@@ -59,6 +59,20 @@ std::optional<Projectile> Tower::update(double dt, const std::vector<std::unique
     return shot;
 }
 
+void Tower::onSold(const std::vector<std::unique_ptr<Enemy>>&)
+{
+}
+
+int Tower::invested() const
+{
+    return m_invested;
+}
+
+void Tower::addInvestment(int gold)
+{
+    m_invested += gold;
+}
+
 Projectile Tower::makeProjectile(Enemy& target, const Path& path, double splashRadius)
 {
     // Standaard (geen lanceerpunten) begint de kogel in het midden van de toren.

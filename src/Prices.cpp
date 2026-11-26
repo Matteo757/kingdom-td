@@ -16,6 +16,11 @@ int buildCost(TowerType type)
     return costs.at(type);
 }
 
+int sellRefund(int totalInvested)
+{
+    return totalInvested > 0 ? totalInvested * kSellPercent / 100 : 0;   // gehele deling = naar beneden afgerond
+}
+
 int upgradeCost(std::uint8_t currentLevel)
 {
     static const std::map<std::uint8_t, int> costs = {

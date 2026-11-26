@@ -67,6 +67,13 @@ public:
     bool buildTower(std::size_t slot, TowerType type);
     bool canUpgrade(std::size_t slot) const;
     bool upgradeTower(std::size_t slot);
+
+    // --- Verkopen ---
+    // Verkoopt de toren op deze bouwplek: de speler krijgt 60% van alles wat erin gestoken is (bouwen + alle
+    // upgrades) en de toren verdwijnt. Daarna is de bouwplek weer leeg, dus een tweede aanroep doet niets.
+    bool canSell(std::size_t slot) const;
+    int sellValue(std::size_t slot) const;   // precies wat sellTower() nu zou uitbetalen (0 zonder toren)
+    bool sellTower(std::size_t slot);
     bool castFireball(const Vec2& target);
     bool fireballReady() const;
     // Handmatig een wave starten (Start Wave / Next Wave-knop). Geeft het bonusgoud terug, dat meteen

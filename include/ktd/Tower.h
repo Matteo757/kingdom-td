@@ -36,6 +36,10 @@ public:
     virtual std::optional<Projectile> update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path);
     virtual std::vector<Vec2> unitPositions() const;
 
+    // Wordt aangeroepen vlak voordat de toren verkocht en verwijderd wordt, zodat hij kan opruimen wat buiten
+    // hem om blijft bestaan. Standaard hoeft dat niet; BarracksTower laat er zijn vastgehouden vijanden mee los.
+    virtual void onSold(const std::vector<std::unique_ptr<Enemy>>& enemies);
+
     Enemy* findTarget(const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path) const;
 
     const Vec2& position() const;
@@ -43,6 +47,11 @@ public:
     double damage() const;
     DamageType damageType() const;
     std::uint8_t level() const;
+
+    // Totaal goud dat in deze ene toren gestoken is: de bouwprijs plus de werkelijk betaalde prijs van elke
+    // upgrade. Game schrijft die bedragen bij; de verkoopprijs wordt hieruit berekend (niet uit het level).
+    int invested() const;
+    void addInvestment(int gold);
 
 protected:
     // Maakt de kogel van deze toren met zijn huidige schade en level; splashRadius > 0 geeft schade in een gebied.
@@ -56,6 +65,7 @@ private:
     double m_damage;
     DamageType m_type;
     std::uint8_t m_level = 1;
+    int m_invested = 0;
     std::size_t m_nextShooter = 0;   // welk lanceerpunt het volgende schot krijgt
     Cooldown<double> m_cooldown;
 };

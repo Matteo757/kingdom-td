@@ -15,13 +15,13 @@ constexpr std::array<TowerType, 5> kBuildableTowers = {
     TowerType::Archer, TowerType::Cannon, TowerType::Mage, TowerType::Barracks, TowerType::Artillery
 };
 
-enum class MenuAction : std::uint8_t { Build, Upgrade, MaxLevel };
+enum class MenuAction : std::uint8_t { Build, Upgrade, MaxLevel, Sell };
 
 // Eén regel van het bouw- of upgrademenu van een bouwplek.
 struct MenuEntry {
     MenuAction action;
     TowerType type;      // bij Build: de toren die gebouwd wordt
-    int price;           // 0 bij MaxLevel
+    int price;           // 0 bij MaxLevel; bij Sell het bedrag dat de verkoop oplevert
     bool enabled;        // true zolang de speler genoeg goud heeft
     std::string text;
 };

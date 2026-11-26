@@ -24,6 +24,7 @@ public:
     std::optional<Projectile> update(double dt, const std::vector<std::unique_ptr<Enemy>>& enemies, const Path& path) override;
     TowerType type() const override { return TowerType::Barracks; }
     std::vector<Vec2> unitPositions() const override;
+    void onSold(const std::vector<std::unique_ptr<Enemy>>& enemies) override;
 
     const std::vector<Soldier>& soldiers() const;
 

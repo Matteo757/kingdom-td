@@ -398,6 +398,8 @@ void GameView::openMenu(std::size_t index, const QPoint& globalPos)
             connect(action, &QAction::triggered, this, [this, index, type]() { build(index, type); });
         } else if (entry.action == MenuAction::Upgrade) {
             connect(action, &QAction::triggered, this, [this, index]() { upgrade(index); });
+        } else if (entry.action == MenuAction::Sell) {
+            connect(action, &QAction::triggered, this, [this, index]() { sell(index); });
         }
     }
     // De vlag van een Barracks verplaats je ook hier: het menu kiest alleen, de vlag zelf volgt daarna de muis.
@@ -448,6 +450,41 @@ void GameView::upgrade(std::size_t index)
     refreshSprite(index);
     refreshLabel(index);
     emit goldChanged(m_game.player().gold());
+}
+
+// Verkoopt de toren op deze bouwplek. Game bepaalt of het mag en hoeveel het oplevert en schrijft het goud bij;
+// hier verdwijnt alleen wat je ziet. Een tweede klik vindt geen toren meer en doet niets.
+void GameView::sell(std::size_t index)
+{
+    if (!m_game.sellTower(index)) {
+        return;
+    }
+    clearTowerView(index);
+    updateUnits();   // de soldaten van een verkochte Barracks verdwijnen meteen, niet pas bij de volgende tick
+    emit goldChanged(m_game.player().gold());
+}
+
+void GameView::clearTowerView(std::size_t index)
+{
+    SlotView& view = m_slotViews[index];
+
+    if (m_flagSlot.has_value() && *m_flagSlot == index) {
+        endFlagPlacement();   // de vlag van deze Barracks werd nog geplaatst
+    }
+
+    // Een item uit de scene halen = het verwijderen: QGraphicsItem haalt zichzelf en zijn kinderen uit de scene.
+    delete view.body;               // de twee boogschutters zijn kinderen van de body
+    view.body = nullptr;
+    view.archers[0] = nullptr;
+    view.archers[1] = nullptr;
+    delete view.range;
+    view.range = nullptr;
+    delete view.label;
+    view.label = nullptr;
+    delete view.flag.root;          // de ring en het rode kruis zijn kinderen van de vlag
+    view.flag = FlagView{};
+
+    view.marker->setVisible(true);  // de bouwplek is weer leeg en bouwbaar
 }
 
 void GameView::addEnemyItem(const SpawnEvent& event)

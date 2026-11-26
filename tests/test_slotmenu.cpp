@@ -106,7 +106,7 @@ private slots:
         Game game = makeGame(1000);
         game.buildTower(0, TowerType::Archer);
         const std::vector<MenuEntry> entries = slotMenuEntries(game, 0);
-        QCOMPARE(entries.size(), std::size_t(1));
+        QCOMPARE(entries.size(), std::size_t(2));   // upgrade (of max level) + verkopen
         QVERIFY(entries[0].action == MenuAction::Upgrade);
         QCOMPARE(entries[0].price, upgradeCost(1));
         QVERIFY(entries[0].text.find("level 2") != std::string::npos);
@@ -144,7 +144,7 @@ private slots:
         game.upgradeTower(0);
         game.upgradeTower(0);
         const std::vector<MenuEntry> entries = slotMenuEntries(game, 0);
-        QCOMPARE(entries.size(), std::size_t(1));
+        QCOMPARE(entries.size(), std::size_t(2));   // upgrade (of max level) + verkopen
         QVERIFY(entries[0].action == MenuAction::MaxLevel);
         QVERIFY(!entries[0].enabled);
         QCOMPARE(entries[0].price, 0);
@@ -155,7 +155,7 @@ private slots:
         Game game = makeGame(1000);
         QCOMPARE(slotMenuEntries(game, 0).size(), kBuildableTowers.size());
         game.buildTower(0, TowerType::Mage);
-        QCOMPARE(slotMenuEntries(game, 0).size(), std::size_t(1));
+        QCOMPARE(slotMenuEntries(game, 0).size(), std::size_t(2));
         QCOMPARE(slotMenuEntries(game, 1).size(), kBuildableTowers.size());
     }
 

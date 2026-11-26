@@ -85,6 +85,8 @@ private:
     void openMenu(std::size_t index, const QPoint& globalPos);
     void build(std::size_t index, TowerType type);
     void upgrade(std::size_t index);
+    void sell(std::size_t index);
+    void clearTowerView(std::size_t index);   // haalt alles weg wat bij de toren op deze bouwplek hoort
     void addEnemyItem(const SpawnEvent& event);
     void syncProjectiles();
     void loadProjectileSprites();

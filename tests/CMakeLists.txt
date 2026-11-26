@@ -65,3 +65,7 @@ add_test(NAME test_routebounds COMMAND test_routebounds)
 add_executable(test_flag test_flag.cpp)
 target_link_libraries(test_flag PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_flag COMMAND test_flag)
+
+add_executable(test_sell test_sell.cpp)
+target_link_libraries(test_sell PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_sell COMMAND test_sell)

@@ -72,6 +72,22 @@ std::optional<Projectile> BarracksTower::attack(Enemy& target, const Path&)
     return std::nullopt;
 }
 
+// De barracks wordt verkocht: de vijanden die zijn soldaten op dat moment vasthouden mogen weer lopen. Anders
+// zouden ze voor altijd geblokkeerd blijven, want niemand zou ze nog loslaten. Een soldaat kan nog een pointer
+// hebben naar een vijand die net verwijderd is, dus we raken alleen vijanden aan die nog in de lijst staan.
+void BarracksTower::onSold(const std::vector<std::unique_ptr<Enemy>>& enemies)
+{
+    for (Soldier& soldier : m_soldiers) {
+        Enemy* target = soldier.target();
+        const bool present = target != nullptr && std::any_of(enemies.begin(), enemies.end(),
+            [target](const std::unique_ptr<Enemy>& e) { return e.get() == target; });
+        if (present) {
+            target->setBlocked(false);
+        }
+        soldier.release();
+    }
+}
+
 void BarracksTower::upgrade()
 {
     const std::uint8_t before = level();
