@@ -22,7 +22,7 @@ namespace ktd {
 // Tower bundelt wat elke toren gemeen heeft (positie, bereik, schade, cooldown, level) en heeft pure virtual functies (attack, type); een toren zonder eigen gedrag kan dus nooit aangemaakt worden.
 class Tower {
 public:
-    static constexpr std::uint8_t kMaxLevel = 3;
+    static constexpr std::uint8_t kMaxLevel = 2;
 
     Tower(const Vec2& position, double range, double damage, DamageType type, double interval);
     virtual ~Tower() = default;

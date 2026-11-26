@@ -916,6 +916,8 @@ void GameView::showFlag(std::size_t index)
 void GameView::beginFlagPlacement(std::size_t slot)
 {
     m_flagSlot = slot;
+    m_ranges.select(slot);   // het bereik van de Barracks blijft zichtbaar tijdens het plaatsen
+    applyRangeDisplay();
     m_roadHighlight->setVisible(true);
     m_ghostFlag.root->setVisible(true);
     updateFlagGhost(mapToScene(mapFromGlobal(QCursor::pos())));
@@ -936,12 +938,12 @@ void GameView::endFlagPlacement()
 void GameView::updateFlagGhost(const QPointF& scenePos)
 {
     // Game beslist of de plek geldig is (weg, binnen de kaart, niet op een bouwplek); de view toont alleen het antwoord.
-    const bool valid = m_game.canPlaceFlag({scenePos.x(), scenePos.y()});
-    m_ghostFlag.root->setPos(scenePos);
+    const bool valid = m_game.canPlaceFlag(*m_flagSlot, {scenePos.x(), scenePos.y()});    m_ghostFlag.root->setPos(scenePos);
     setFlagColor(m_ghostFlag, valid ? kValidFlagColor : kInvalidFlagColor);
     m_ghostFlag.cross->setVisible(!valid);
     m_flagHint->setVisible(!valid);
     m_flagHint->setPos(scenePos.x() + 16.0, scenePos.y() - kFlagPoleHeight - 18.0);
+    m_flagHintText = new QGraphicsSimpleTextItem("Alleen op de weg, binnen bereik!", m_flagHint);
     viewport()->setCursor(valid ? Qt::CrossCursor : Qt::ForbiddenCursor);
 }
 

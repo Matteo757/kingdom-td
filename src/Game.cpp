@@ -267,25 +267,37 @@ void Game::removeFinishedEnemies(FrameEvents& events)
     }
 }
 
+// --- Vlag van een Barracks ---
+
 bool Game::canPlaceFlag(const Vec2& point) const
 {
-    const bool onMap = point.x >= kMapMargin && point.x <= kMapWidth - kMapMargin
-                       && point.y >= kMapMargin && point.y <= kMapHeight - kMapMargin;
-    if (!onMap || !m_bounds.contains(point)) {
-        return false;   // buiten de kaart, of op gras / bos / water
+    return m_bounds.contains(point);
+}
+
+bool Game::canPlaceFlag(std::size_t slot, const Vec2& point) const
+{
+    if (slot >= m_slots.size() ||
+        m_slots[slot].tower == nullptr ||
+        !canPlaceFlag(point)) {
+        return false;
     }
-    // Een bouwplek is geen weg, ook niet als hij toevallig dicht bij de weg ligt.
-    return std::none_of(m_slots.begin(), m_slots.end(), [&point](const BuildSlot& slot) {
-        return std::hypot(slot.position.x - point.x, slot.position.y - point.y) < kPadClearance;
-    });
+
+    const Tower& tower = *m_slots[slot].tower;
+
+    return std::hypot(
+        point.x - tower.position().x,
+        point.y - tower.position().y
+    ) <= tower.range();
 }
 
 bool Game::placeFlag(std::size_t slot, const Vec2& point)
 {
-    if (slot >= m_slots.size() || !canPlaceFlag(point)) {
+    if (!canPlaceFlag(slot, point)) {
         return false;
     }
+
     auto* barracks = dynamic_cast<BarracksTower*>(m_slots[slot].tower);
+
     return barracks != nullptr && barracks->setFlag(point);
 }
 
@@ -294,10 +306,13 @@ std::optional<Vec2> Game::flagPosition(std::size_t slot) const
     if (slot >= m_slots.size()) {
         return std::nullopt;
     }
+
     const auto* barracks = dynamic_cast<const BarracksTower*>(m_slots[slot].tower);
+
     if (barracks == nullptr) {
         return std::nullopt;
     }
+
     return barracks->flag();
 }
 

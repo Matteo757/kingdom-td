@@ -157,22 +157,22 @@ private slots:
     void flagCanBeMovedWheneverThePlayerWants() {
         Game game = makeStraightGame();
         QVERIFY(game.buildTower(0, TowerType::Barracks));
-        QVERIFY(game.placeFlag(0, {700.0, 100.0}));
-        QVERIFY(near(game.flagPosition(0)->x, 700.0));
-        QVERIFY(game.placeFlag(0, {200.0, 100.0}));
-        QVERIFY(near(game.flagPosition(0)->x, 200.0));
-        QVERIFY(game.placeFlag(0, {900.0, 112.0}));
-        QVERIFY(near(game.flagPosition(0)->x, 900.0) && near(game.flagPosition(0)->y, 112.0));
+        QVERIFY(game.placeFlag(0, {560.0, 100.0}));
+        QVERIFY(near(game.flagPosition(0)->x, 560.0));
+        QVERIFY(game.placeFlag(0, {440.0, 100.0}));
+        QVERIFY(near(game.flagPosition(0)->x, 440.0));
+        QVERIFY(game.placeFlag(0, {570.0, 112.0}));
+        QVERIFY(near(game.flagPosition(0)->x, 570.0) && near(game.flagPosition(0)->y, 112.0));
     }
 
     void invalidPlacementKeepsTheOldFlag() {
         Game game = makeStraightGame();
         QVERIFY(game.buildTower(0, TowerType::Barracks));
-        QVERIFY(game.placeFlag(0, {700.0, 100.0}));
-        QVERIFY(!game.placeFlag(0, {700.0, 300.0}));          // gras
+        QVERIFY(game.placeFlag(0, {560.0, 100.0}));
+        QVERIFY(!game.placeFlag(0, {560.0, 300.0}));          // gras
         QVERIFY(!game.placeFlag(0, {-20.0, 100.0}));          // buiten de kaart
         QVERIFY(!game.placeFlag(0, {800.0, 100.0}));          // bouwplek
-        QVERIFY(near(game.flagPosition(0)->x, 700.0) && near(game.flagPosition(0)->y, 100.0));
+        QVERIFY(near(game.flagPosition(0)->x, 560.0) && near(game.flagPosition(0)->y, 100.0));
     }
 
     void barracksItselfRefusesAFlagOnTheGrass() {
@@ -188,12 +188,12 @@ private slots:
         Game game = makeStraightGame();
         QVERIFY(game.buildTower(0, TowerType::Barracks));
         QVERIFY(game.buildTower(1, TowerType::Barracks));
-        QVERIFY(game.placeFlag(0, {700.0, 100.0}));
-        QVERIFY(near(game.flagPosition(0)->x, 700.0));
+        QVERIFY(game.placeFlag(0, {560.0, 100.0}));
+        QVERIFY(near(game.flagPosition(0)->x, 560.0));
         QVERIFY(near(game.flagPosition(1)->x, 300.0));        // de tweede is niet meeverplaatst
-        QVERIFY(game.placeFlag(1, {100.0, 100.0}));
-        QVERIFY(near(game.flagPosition(0)->x, 700.0));
-        QVERIFY(near(game.flagPosition(1)->x, 100.0));
+        QVERIFY(game.placeFlag(1, {240.0, 100.0}));
+        QVERIFY(near(game.flagPosition(0)->x, 560.0));
+        QVERIFY(near(game.flagPosition(1)->x, 240.0));
     }
 
     // ---- (3) soldaten lopen naar de vlag ----
@@ -352,12 +352,12 @@ private slots:
     void gameUpdateMovesTheSoldiersToo() {
         Game game = makeStraightGame();
         QVERIFY(game.buildTower(0, TowerType::Barracks));
-        QVERIFY(game.placeFlag(0, {700.0, 100.0}));
+        QVERIFY(game.placeFlag(0, {560.0, 100.0}));
         for (int i = 0; i < 100; ++i) {
-            game.update(0.05);                                // vijf seconden
+            game.update(0.05);
         }
         for (const Soldier& soldier : barracksAt(game, 0)->soldiers()) {
-            QVERIFY(std::abs(soldier.distance() - 700.0) <= 16.0 + 1e-9);
+            QVERIFY(std::abs(soldier.distance() - 560.0) <= 16.0 + 1e-9);
         }
     }
 
@@ -451,6 +451,18 @@ private slots:
         for (const Soldier& soldier : tower.soldiers()) {
             QVERIFY(std::abs(soldier.distance() - 900.0) <= 16.0 + 1e-9);
         }
+    }
+    void flagIsRejectedOutsideTheRangeOfTheBarracks() {
+        Game game = makeStraightGame();
+        QVERIFY(game.buildTower(0, TowerType::Barracks));
+        const double range = game.buildSlots()[0].tower->range();
+        const double reach = std::sqrt(range * range - 50.0 * 50.0);   // de toren ligt 50 px naast de weg
+        QVERIFY(game.canPlaceFlag(0, {500.0 + reach - 1.0, 100.0}));
+        QVERIFY(!game.canPlaceFlag(0, {500.0 + reach + 1.0, 100.0}));
+        QVERIFY(!game.canPlaceFlag(0, {500.0 - reach - 1.0, 100.0}));
+        QVERIFY(game.placeFlag(0, {500.0 + reach - 1.0, 100.0}));
+        QVERIFY(!game.placeFlag(0, {700.0, 100.0}));          // te ver weg: de oude vlag blijft staan
+        QVERIFY(near(game.flagPosition(0)->x, 500.0 + reach - 1.0));
     }
 };
 

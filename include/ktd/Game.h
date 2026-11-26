@@ -90,12 +90,17 @@ public:
     // --- Vlag van een Barracks ---
     // Een vlag mag alleen op de begaanbare weg (RouteBounds), binnen de kaart en niet op een bouwplek.
     bool canPlaceFlag(const Vec2& point) const;
-    // Zet (of verplaatst) de vlag van de Barracks op deze bouwplek. False als er geen Barracks staat of als de
-    // plek niet geldig is; de oude vlag blijft dan staan.
+
+    // Controleert of de vlag ook binnen het bereik van de Barracks staat.
+    bool canPlaceFlag(std::size_t slot, const Vec2& point) const;
+
+    // Zet (of verplaatst) de vlag van de Barracks op deze bouwplek. False als er geen Barracks staat
+    // or als de plek niet geldig is; de oude vlag blijft dan staan.
     bool placeFlag(std::size_t slot, const Vec2& point);
+
     // De vlag van de Barracks op deze bouwplek, of niets als daar geen Barracks staat.
     std::optional<Vec2> flagPosition(std::size_t slot) const;
-
+    
     const Path& path() const;
     const RouteBounds& routeBounds() const;
     const Player& player() const;
