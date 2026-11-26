@@ -21,12 +21,15 @@ Gemaakt door Matteo Belmans (Matteo757) als eindopdracht C++.
 |---|---|
 | Toren bouwen of upgraden | Linkermuisknop op een bouwplek (het bordje) opent het menu |
 | Vuurbal gooien | Rechtermuisknop op het pad (heeft een cooldown) |
+| Bereik van een toren bekijken | Klik op een toren: alleen zijn bereik verschijnt (met het level van dat moment). Een andere toren kiezen vervangt de zone; klikken op een lege plek of `Esc` verbergt hem. Wijs je in het bouwmenu een toren aan, dan zie je het bereik van die toren op de bouwplek |
 | Vlag van een barracks plaatsen of verplaatsen | Kies "Vlag plaatsen / verplaatsen" in het menu van de barracks, of klik op de vlag zelf. Links klikken plaatst de vlag, rechtermuisknop of `Esc` annuleert |
 | Route tonen of verbergen | Toets `P` (handig om de waypoints te controleren) |
+| Pauzeren of hervatten | Toets `Spatie` (de wavetimer staat dan ook stil) |
 
 - **Torens:** boogschutter (fysieke schade), mage (magische schade), kanon, artillerie en barracks (soldaten die vijanden tegenhouden). Elke toren kan tot level 3 geüpgraded worden.
 - **De vlag van een barracks:** de soldaten lopen langs de weg naar hun vlag en houden vijanden bij de vlag tegen. Tijdens het plaatsen volgt een vlag de muis: groen betekent dat het mag, rood met een kruis en "Alleen op de weg!" betekent dat het niet mag. Een vlag kan alleen op de weg staan, binnen de kaart en niet op een bouwplek. Verplaats je de vlag, dan laten vechtende soldaten hun vijand los en lopen ze naar de nieuwe plek.
 - **Vijanden:** goblin, skeleton, orc en dark mage. Ze hebben verschillende health, snelheid, armor en magic resist. Schade wordt dus per type anders verminderd.
+- **Waves:** de eerste wave begint pas als jij op **Start Wave** klikt, zodat je eerst rustig kunt bouwen. Daarna loopt een timer van 20 seconden vanaf de laatste vijand van de wave. Klik je op **Next Wave** voordat hij afloopt, dan krijg je 3 goud per resterende seconde als bonus (maximaal 60). Wacht je tot de timer op is, dan begint de volgende wave vanzelf, zonder bonus. Waves mogen elkaar overlappen.
 - **Doel:** overleef alle waves. Elke vijand die het kasteel bereikt kost een leven. Bij 0 levens is het game over.
 - **Levels:** level 1 en level 3 zitten erin. Het spel start in level 1.
 
@@ -423,6 +426,7 @@ ctest --test-dir build --output-on-failure
 | `test_progression` | moeilijkheidsopbouw over de waves |
 | `test_levelloader` | JSON inlezen, foutafhandeling en het laden in een aparte thread |
 | `test_slotmenu` | bouw- en upgrademenu: prijzen en beschikbaarheid volgen het goud van de speler |
+| `test_autostart` | automatische start van de volgende wave, vroeg starten, klik en timer tegelijk, overlappende waves en pauze |
 
 ## Bug tickets
 

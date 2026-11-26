@@ -69,3 +69,11 @@ add_test(NAME test_flag COMMAND test_flag)
 add_executable(test_sell test_sell.cpp)
 target_link_libraries(test_sell PRIVATE ktd_core Qt6::Test)
 add_test(NAME test_sell COMMAND test_sell)
+
+add_executable(test_autostart test_autostart.cpp)
+target_link_libraries(test_autostart PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_autostart COMMAND test_autostart)
+
+add_executable(test_rangeselection test_rangeselection.cpp)
+target_link_libraries(test_rangeselection PRIVATE ktd_core Qt6::Test)
+add_test(NAME test_rangeselection COMMAND test_rangeselection)

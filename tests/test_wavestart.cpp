@@ -85,12 +85,14 @@ private slots:
         QVERIFY(!manager.firstWavePending());
     }
 
-    void nextWaveNeverStartsByItself() {
+    void nextWaveStartsByItselfAfterTwentySeconds() {
         WaveManager manager = manualManager({makeWave(1), makeWave(1)});
         startAndSpawnWholeWave(manager, 1);
-        QVERIFY(manager.update(500.0).empty());
+        QVERIFY(manager.update(19.9).empty());
         QCOMPARE(manager.currentWave(), std::size_t(1));
         QVERIFY(manager.canStartNextWave());
+        QCOMPARE(manager.update(0.2).size(), std::size_t(1));
+        QCOMPARE(manager.currentWave(), std::size_t(2));
     }
 
     void nextWaveStartsImmediatelyOnClick() {
@@ -138,13 +140,13 @@ private slots:
         QCOMPARE(manager.earlyBonus(), 54);
     }
 
-    void bonusIsZeroWhenTimerRanOutAndStays() {
+    void bonusIsZeroJustBeforeTheTimerRunsOut() {
         WaveManager manager = manualManager({makeWave(1), makeWave(1)});
         startAndSpawnWholeWave(manager, 1);
-        manager.update(500.0);
-        QCOMPARE(manager.timeUntilNextWave(), 0.0);
+        manager.update(19.9);
+        QVERIFY(manager.timeUntilNextWave() < 0.2);
         QCOMPARE(manager.earlyBonus(), 0);
-        QVERIFY(manager.canStartNextWave());            // starten mag nog steeds, alleen zonder bonus
+        QVERIFY(manager.canStartNextWave());            // starten mag nog, alleen zonder bonus
     }
 
     void bonusIsClampedToSixty() {

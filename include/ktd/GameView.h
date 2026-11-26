@@ -26,6 +26,7 @@
 #include <unordered_map>
 #include <vector>
 #include "ktd/Game.h"
+#include "ktd/RangeSelection.h"
 #include "ktd/RouteBounds.h"
 
 namespace ktd {
@@ -93,11 +94,17 @@ private:
     void applyEvents(const FrameEvents& events);
     void updateUnits();
     void showEndText(const QString& text);
+    void togglePause();
     void showFireball(const QPointF& center);
     void createWaveButton();
     void updateWaveButton();
     void startNextWave();
     void showBonusText(int bonus);
+
+    // --- Bereikzones: standaard verborgen, alleen bij een geselecteerde toren of een bouwvoorbeeld ---
+    void createPlacementRange();
+    void applyRangeDisplay();                                  // toont precies de ene zone die RangeSelection aanwijst
+    std::optional<std::size_t> slotAt(const QPointF& scenePos) const;   // bouwplek of toren onder de muis
 
     // --- Vlag van een Barracks ---
     FlagView makeFlagView(const QColor& color);
@@ -136,6 +143,9 @@ private:
 
     // Plaatsen van een vlag: de bouwplek van de Barracks waarvan de vlag nu verplaatst wordt (als dat gebeurt).
     std::optional<std::size_t> m_flagSlot;
+    RangeSelection m_ranges;                       // welke bereikzone zichtbaar is (de logica staat in de kern)
+    QGraphicsEllipseItem* m_placementRange = nullptr;   // het bouwvoorbeeld: bereik van de toren die je zou bouwen
+
     FlagView m_ghostFlag;                         // de vlag die met de muis meebeweegt
     QGraphicsRectItem* m_flagHint = nullptr;      // "Alleen op de weg!" naast de muis bij een ongeldige plek
     QGraphicsSimpleTextItem* m_flagHintText = nullptr;
@@ -143,6 +153,7 @@ private:
     QTimer m_timer;
     QElapsedTimer m_clock;
     std::size_t m_shownWave = 0;
+    QGraphicsSimpleTextItem* m_pauseText = nullptr;   // "PAUZE", alleen zichtbaar tijdens de pauze
 };
 
 }

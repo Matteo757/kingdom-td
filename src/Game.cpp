@@ -189,10 +189,20 @@ int Game::startNextWave()
     return bonus;
 }
 
+void Game::setPaused(bool paused)
+{
+    m_paused = paused;
+}
+
+bool Game::isPaused() const
+{
+    return m_paused;
+}
+
 FrameEvents Game::update(double dt)
 {
     FrameEvents events;
-    if (isGameOver()) {
+    if (isGameOver() || m_paused) {
         return events;
     }
 

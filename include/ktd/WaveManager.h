@@ -15,8 +15,10 @@ struct Wave {
 
 // Hoe een volgende wave begint.
 //  Automatic: vanzelf, na de wachttijd (gedrag van voor de Start Wave-knop, o.a. in de tests).
-//  Manual:    pas als de speler erom vraagt met startNextWave(). Waves mogen elkaar dan overlappen:
-//             vijanden van eerdere waves blijven gewoon in Game bestaan.
+//  Manual:    de speler start de eerste wave zelf met startNextWave(), zo lang als hij wil. Elke volgende wave
+//             start de speler ook zelf, vroeg voor bonusgoud, of anders begint hij vanzelf zodra de bonustimer
+//             (waveDelay, 20 s) op is, zonder bonus. Zo kan de speler nooit eindeloos wachten.
+//             Waves mogen elkaar overlappen: vijanden van eerdere waves blijven gewoon in Game bestaan.
 enum class StartMode { Automatic, Manual };
 
 // Vroeg-startbonus: 3 goud per hele seconde die nog over is van de wachttijd, met een maximum van 60.
@@ -44,6 +46,7 @@ public:
     // Dat geldt ook voor de eerste wave, en ook als er nog vijanden van eerdere waves leven.
     bool canStartNextWave() const;
     // Start de volgende wave meteen en geeft het bonusgoud terug (0 bij de eerste wave of als de timer op is).
+    // Een tweede aanroep voor dezelfde wave doet niets: de wave is dan al bezig (canStartNextWave() is false).
     int startNextWave();
     // Bonus als de speler nu zou starten: floor(resterende seconden) * 3, begrensd op 0..60.
     int earlyBonus() const;
@@ -54,6 +57,12 @@ public:
     StartMode startMode() const;
 
 private:
+    // Het enige punt waar een wave in Manual-modus begint. Zowel de klik van de speler (startNextWave) als het
+    // verlopen van de bonustimer (update) komen hier uit, dus een wave kan nooit twee keer starten.
+    void beginWave();
+    // Manual: de timer is verlopen en de speler heeft niet geklikt. Nooit voor de eerste wave.
+    bool autoStartDue() const;
+
     std::vector<Wave> m_waves;
     double m_waveDelay;
     double m_countdown;

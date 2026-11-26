@@ -82,6 +82,11 @@ public:
     int startNextWave();
     FrameEvents update(double dt);
 
+    // Pauze: zolang het spel gepauzeerd is doet update() niets. Daardoor staat alles stil: vijanden, kogels, torens,
+    // de vuurbal-cooldown en ook de wavetimer (de bonustimer en de automatische start van de volgende wave).
+    void setPaused(bool paused);
+    bool isPaused() const;
+
     // --- Vlag van een Barracks ---
     // Een vlag mag alleen op de begaanbare weg (RouteBounds), binnen de kaart en niet op een bouwplek.
     bool canPlaceFlag(const Vec2& point) const;
@@ -117,6 +122,7 @@ private:
     std::vector<Projectile> m_projectiles;
     std::uint64_t m_nextProjectileId = 1;
     std::unique_ptr<Spell> m_fireball = std::make_unique<Fireball>();
+    bool m_paused = false;
 };
 
 }

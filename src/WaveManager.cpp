@@ -21,13 +21,24 @@ std::vector<EnemyType> WaveManager::update(double dt)
         return spawned;
     }
 
+    bool startedAutomatically = false;
     if (m_mode == StartMode::Manual && !m_running) {
-        // Wachten op de speler. Na de laatste vijand van een wave telt de bonustimer af naar 0 en blijft daar staan.
+        // Wachten op de speler. Na de laatste vijand van een wave telt de bonustimer af naar 0.
         m_countdown = std::max(0.0, m_countdown - dt);
-        return spawned;
+        if (!autoStartDue()) {
+            return spawned;
+        }
+        // De timer is op en de speler heeft niet geklikt: de volgende wave begint nu vanzelf. Er wordt hier geen
+        // bonus uitbetaald, want alleen startNextWave() geeft een bonus terug.
+        beginWave();
+        startedAutomatically = true;
     }
 
-    m_countdown -= dt;
+    // Bij een automatische start is dt al gebruikt om de timer naar 0 te brengen; niet nog een keer aftrekken,
+    // anders zouden bij een grote dt meteen meerdere vijanden van de nieuwe wave verschijnen.
+    if (!startedAutomatically) {
+        m_countdown -= dt;
+    }
     // while i.p.v. if: bij een grote dt kunnen er meerdere vijanden in één stap verschijnen.
     while (m_countdown <= 0.0 && !finished()) {
         const Wave& wave = m_waves[m_waveIndex];
@@ -88,9 +99,20 @@ int WaveManager::startNextWave()
         return 0;
     }
     const int bonus = earlyBonus();   // berekend op het moment van klikken, vóór de timer herstart
+    beginWave();
+    return bonus;
+}
+
+void WaveManager::beginWave()
+{
     m_running = true;
     m_countdown = 0.0;                // de eerste vijand verschijnt bij de eerstvolgende update()
-    return bonus;
+}
+
+bool WaveManager::autoStartDue() const
+{
+    // m_waveIndex is 0 zolang de eerste wave nog niet gestart is: daar is geen timer en dus ook geen automatische start.
+    return canStartNextWave() && m_waveIndex > 0 && m_countdown <= 0.0;
 }
 
 int WaveManager::earlyBonus() const

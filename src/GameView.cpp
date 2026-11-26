@@ -149,6 +149,7 @@ GameView::GameView(Game game, int level, QWidget* parent)
     drawSlots();
     loadProjectileSprites();
     createWaveButton();
+    createPlacementRange();
     createFlagGhost();
     setMouseTracking(true);              // de vlag moet meebewegen zonder dat er een knop ingedrukt is
     viewport()->setMouseTracking(true);
@@ -220,14 +221,14 @@ void GameView::mousePressEvent(QMouseEvent* event)
                 return;
             }
         }
-        const std::vector<BuildSlot>& allSlots = m_game.buildSlots();
-        for (std::size_t i = 0; i < allSlots.size(); ++i) {
-            const Vec2& p = allSlots[i].position;
-            if (std::hypot(scenePos.x() - p.x, scenePos.y() - p.y) <= kSlotRadius) {
-                openMenu(i, event->globalPosition().toPoint());
-                return;
-            }
+        const std::optional<std::size_t> hit = slotAt(scenePos);
+        if (hit.has_value()) {
+            openMenu(*hit, event->globalPosition().toPoint());
+            return;
         }
+        // Een klik op een lege plek deselecteert: de bereikzone van de toren verdwijnt weer.
+        m_ranges.clearSelection();
+        applyRangeDisplay();
     }
     QGraphicsView::mousePressEvent(event);
 }
@@ -253,6 +254,35 @@ void GameView::keyPressEvent(QKeyEvent* event)
         }
         return;
     }
+    if (event->key() == Qt::Key_Escape && m_ranges.selected().has_value()) {
+        m_ranges.clearSelection();   // Esc deselecteert de toren
+        applyRangeDisplay();
+        return;
+    }
+    if (event->key() == Qt::Key_Space) {
+        togglePause();
+        return;
+    }
+    QGraphicsView::keyPressEvent(event);
+}
+
+// Zet het spel op pauze of hervat het. Alle tijd loopt via Game::update(), dus de wavetimer staat ook stil.
+void GameView::togglePause()
+{
+    if (!m_timer.isActive()) {
+        return;   // na Game Over of Victory valt er niets meer te pauzeren
+    }
+    m_game.setPaused(!m_game.isPaused());
+
+    if (m_pauseText == nullptr) {
+        m_pauseText = m_scene->addSimpleText("PAUZE", QFont("Arial", 48, QFont::Bold));
+        m_pauseText->setBrush(Qt::white);
+        m_pauseText->setPen(QPen(Qt::black, 2));
+        m_pauseText->setZValue(20);
+        const QRectF box = m_pauseText->boundingRect();
+        m_pauseText->setPos(m_scene->width() / 2 - box.width() / 2, m_scene->height() / 2 - box.height() / 2);
+    }
+    m_pauseText->setVisible(m_game.isPaused());
 }
 
 void GameView::drawMap(int level)
@@ -302,6 +332,62 @@ void GameView::drawSlots()
     }
 }
 
+void GameView::createPlacementRange()
+{
+    // Zelfde uiterlijk als de bereikzone van een toren, maar blauw en gestippeld: het is een voorbeeld, nog geen toren.
+    m_placementRange = m_scene->addEllipse(0, 0, 0, 0, QPen(QColor(120, 200, 255, 190), 2, Qt::DashLine),
+                                           QBrush(QColor(120, 200, 255, 40)));
+    m_placementRange->setZValue(-1);
+    m_placementRange->setVisible(false);
+}
+
+// De enige plek die bereikzones laat verschijnen of verdwijnen. RangeSelection bepaalt welke zone er is (nooit meer
+// dan één, met de actuele straal van de toren); hier wordt alles eerst verborgen en daarna alleen die zone getoond.
+void GameView::applyRangeDisplay()
+{
+    for (SlotView& view : m_slotViews) {
+        if (view.range != nullptr) {
+            view.range->setVisible(false);
+        }
+    }
+    m_placementRange->setVisible(false);
+
+    const std::optional<RangeZone> zone = m_ranges.visibleZone(m_game);
+    if (!zone.has_value()) {
+        return;
+    }
+    const QRectF rect(zone->center.x - zone->radius, zone->center.y - zone->radius, 2 * zone->radius, 2 * zone->radius);
+    if (zone->kind == RangeZone::Kind::Selected) {
+        QGraphicsEllipseItem* range = m_slotViews[zone->slot].range;
+        if (range != nullptr) {
+            range->setRect(rect);   // de straal van het huidige level, ook na een upgrade
+            range->setVisible(true);
+        }
+    } else {
+        m_placementRange->setRect(rect);
+        m_placementRange->setVisible(true);
+    }
+}
+
+// Een bouwplek wordt aangeklikt op de plek zelf; een gebouwde toren ook op zijn sprite.
+std::optional<std::size_t> GameView::slotAt(const QPointF& scenePos) const
+{
+    const std::vector<BuildSlot>& allSlots = m_game.buildSlots();
+    for (std::size_t i = 0; i < allSlots.size(); ++i) {
+        const Vec2& p = allSlots[i].position;
+        if (std::hypot(scenePos.x() - p.x, scenePos.y() - p.y) <= kSlotRadius) {
+            return i;
+        }
+    }
+    for (std::size_t i = 0; i < m_slotViews.size(); ++i) {
+        const QGraphicsPixmapItem* body = m_slotViews[i].body;
+        if (body != nullptr && body->sceneBoundingRect().contains(scenePos)) {
+            return i;
+        }
+    }
+    return std::nullopt;
+}
+
 void GameView::showTower(std::size_t index)
 {
     const Tower& tower = *m_game.buildSlots()[index].tower;
@@ -313,6 +399,7 @@ void GameView::showTower(std::size_t index)
     view.range = m_scene->addEllipse(pos.x - r, pos.y - r, 2 * r, 2 * r,
                                      QPen(QColor(255, 255, 255, 90)), QBrush(QColor(255, 255, 255, 30)));
     view.range->setZValue(-1);
+    view.range->setVisible(false);   // standaard verborgen: de zone verschijnt pas als de toren geselecteerd is
     view.body = m_scene->addPixmap(QPixmap());
     view.body->setTransformationMode(Qt::SmoothTransformation);
     view.body->setPos(pos.x, pos.y);
@@ -387,6 +474,15 @@ void GameView::openMenu(std::size_t index, const QPoint& globalPos)
     m_openMenuSlot = index;
     m_openMenuActions.clear();
 
+    // Een toren die staat is nu geselecteerd (zijn bereik verschijnt, een eerdere selectie verdwijnt).
+    // Een lege bouwplek deselecteert; daar toont het menu het bereik van de toren die je zou bouwen.
+    if (m_game.buildSlots()[index].tower != nullptr) {
+        m_ranges.select(index);
+    } else {
+        m_ranges.clearSelection();
+    }
+    applyRangeDisplay();
+
     // De regels komen uit slotMenuEntries(): dezelfde functie die refreshOpenMenu() bij elke goudwijziging gebruikt.
     for (const MenuEntry& entry : slotMenuEntries(m_game, index)) {
         QAction* action = menu.addAction(QString::fromStdString(entry.text));
@@ -396,6 +492,11 @@ void GameView::openMenu(std::size_t index, const QPoint& globalPos)
         if (entry.action == MenuAction::Build) {
             const TowerType type = entry.type;
             connect(action, &QAction::triggered, this, [this, index, type]() { build(index, type); });
+            // Wijs je een toren in het menu aan, dan zie je meteen zijn bereik op deze bouwplek.
+            connect(action, &QAction::hovered, this, [this, index, type]() {
+                m_ranges.showPreview(index, type);
+                applyRangeDisplay();
+            });
         } else if (entry.action == MenuAction::Upgrade) {
             connect(action, &QAction::triggered, this, [this, index]() { upgrade(index); });
         } else if (entry.action == MenuAction::Sell) {
@@ -410,6 +511,10 @@ void GameView::openMenu(std::size_t index, const QPoint& globalPos)
         connect(flagAction, &QAction::triggered, this, [this, index]() { beginFlagPlacement(index); });
     }
     menu.exec(globalPos);
+
+    // Het menu is dicht, gekozen of geannuleerd: het bouwvoorbeeld verdwijnt. Een net gebouwde toren blijft geselecteerd.
+    m_ranges.hidePreview();
+    applyRangeDisplay();
 
     m_openMenuActions.clear();
     m_openMenu.clear();
@@ -439,6 +544,8 @@ void GameView::build(std::size_t index, TowerType type)
         return;
     }
     showTower(index);
+    m_ranges.select(index);   // de nieuwe toren blijft geselecteerd: zijn bereik vervangt het bouwvoorbeeld
+    applyRangeDisplay();
     emit goldChanged(m_game.player().gold());
 }
 
@@ -449,6 +556,7 @@ void GameView::upgrade(std::size_t index)
     }
     refreshSprite(index);
     refreshLabel(index);
+    applyRangeDisplay();   // een geselecteerde toren toont zijn bereik van het nieuwe level
     emit goldChanged(m_game.player().gold());
 }
 
@@ -459,7 +567,11 @@ void GameView::sell(std::size_t index)
     if (!m_game.sellTower(index)) {
         return;
     }
+    if (m_ranges.selected() == index) {
+        m_ranges.clearSelection();   // een verkochte toren heeft geen bereik meer
+    }
     clearTowerView(index);
+    applyRangeDisplay();
     updateUnits();   // de soldaten van een verkochte Barracks verdwijnen meteen, niet pas bij de volgende tick
     emit goldChanged(m_game.player().gold());
 }
