@@ -27,6 +27,15 @@ inline constexpr std::array<std::array<LaunchPoint, 2>, 3> kArcherLaunchPoints =
     {{{0.7, -62.2}, {11.5, -62.2}}},    // level 3 (de vlaggenstok staat tussen de twee)
 }};
 
+// ---- Mage Tower: het magiërtje ----
+// Eén punt per level (1, 2, 3): het midden van de bovenkant van de toren. De magiebol begint hier en de paarse
+// stip op de toren wordt hier ook getekend.
+inline constexpr std::array<std::array<LaunchPoint, 1>, 3> kMageLaunchPoints = {{
+    {{{0.0, -41.4}}},     // level 1 (midden van de open top)
+    {{{-1.6, -56.2}}},    // level 2 (midden van de bol)
+    {{{-1.2, -70.7}}},    // level 3 (midden van de bol)
+}};
+
 // De lanceerpunten van een toren op dit level. Een lege lijst betekent: nog geen eigen punten, de kogels
 // beginnen dan in het midden van de toren (zo is het bij de andere torens nu nog). Nieuwe torens voeg je
 // hier toe met een eigen tabel zoals hierboven.
@@ -35,6 +44,10 @@ inline std::span<const LaunchPoint> launchPoints(TowerType type, std::uint8_t le
     if (type == TowerType::Archer) {
         const std::size_t row = std::clamp<std::size_t>(level, 1, kArcherLaunchPoints.size()) - 1;
         return kArcherLaunchPoints[row];
+    }
+    if (type == TowerType::Mage) {
+        const std::size_t row = std::clamp<std::size_t>(level, 1, kMageLaunchPoints.size()) - 1;
+        return kMageLaunchPoints[row];
     }
     return {};
 }

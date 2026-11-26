@@ -44,6 +44,11 @@ constexpr int kSpriteSupersample = 2;   // sprite wordt 2x zo groot voorgeschaal
 // ---- De twee groene boogschutters (stippen) op de Archer Tower ----
 // Waar de stippen staan (en dus waar de pijlen vandaan komen) staat in include/ktd/LaunchPoints.h.
 constexpr double kArcherDotRadius = 3.8;   // in sceneruimte
+// ---- Het paarse magiërtje (stip) op de Mage Tower ----
+constexpr double kMageDotRadius = 3.8;   // in sceneruimte, net als de boogschutters
+
+// Midden van de bovenkant per level, als fractie van de originele sprite (x/breedte, y/hoogte).
+// Zo klopt de plek bij elke schaal. Level 1: het midden van de open top. Level 2 en 3: het midden van de bol.
 
 QColor colorFor(EnemyType type)
 {
@@ -434,9 +439,12 @@ void GameView::refreshSprite(std::size_t index)
     body->setPixmap(sprite);
     body->setScale(1.0 / kSpriteSupersample);
     body->setOffset(-sprite.width() / 2.0, kSpriteDrop * kSpriteSupersample - sprite.height());
-
+    
     if (tower.type() == TowerType::Archer) {
         updateArchers(index);
+    }
+    if (tower.type() == TowerType::Mage) {
+        updateMage(index);
     }
 }
 
@@ -459,6 +467,24 @@ void GameView::updateArchers(std::size_t index)
         }
         view.archers[i]->setPos(points[i].x * kSpriteSupersample, points[i].y * kSpriteSupersample);
     }
+}
+
+// Zet het magiërtje op het lanceerpunt van de Mage Tower (LaunchPoints.h), dus precies waar de magiebol begint.
+void GameView::updateMage(std::size_t index)
+{
+    SlotView& view = m_slotViews[index];
+    const std::span<const LaunchPoint> points = launchPoints(TowerType::Mage, m_game.buildSlots()[index].tower->level());
+    if (points.empty()) {
+        return;
+    }
+
+    if (view.mage == nullptr) {
+        const double r = kMageDotRadius * kSpriteSupersample;
+        view.mage = new QGraphicsEllipseItem(-r, -r, 2 * r, 2 * r, view.body);
+        view.mage->setBrush(QColor(150, 60, 220));
+        view.mage->setPen(QPen(QColor(235, 220, 255), 1.2 * kSpriteSupersample));
+    }
+    view.mage->setPos(points[0].x * kSpriteSupersample, points[0].y * kSpriteSupersample);
 }
 
 void GameView::refreshLabel(std::size_t index)
@@ -589,6 +615,7 @@ void GameView::clearTowerView(std::size_t index)
     view.body = nullptr;
     view.archers[0] = nullptr;
     view.archers[1] = nullptr;
+    view.mage = nullptr;
     delete view.range;
     view.range = nullptr;
     delete view.label;
